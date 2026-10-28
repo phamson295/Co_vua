@@ -1,0 +1,17 @@
+{
+  "name": "co-vua",
+  "version": "1.0.0",
+  "description": "Game cờ vua: chơi 2 người trên một máy, chơi với máy (12 cấp độ) và chơi online",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.22.0"
+  }
+}
