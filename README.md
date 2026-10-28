@@ -8,6 +8,11 @@ Game cờ vua chạy trên trình duyệt, dùng được trên điện thoại 
 
 Luật đầy đủ: nhập thành, bắt tốt qua đường, phong cấp, chiếu, chiếu hết, hết nước đi (hòa), lặp lại thế cờ 3 lần (hòa), luật 50 nước (hòa), không đủ quân để chiếu hết (hòa).
 
+**Giao diện** (mục "Giao diện" ở menu và trong ván, lưu trên trình duyệt):
+- Kiểu quân: Đặc (mặc định), Viền (quân trắng rỗng), Chữ cái.
+- Bàn cờ: Gỗ, Xanh lá, Xanh dương, Đá cẩm thạch, Ban đêm.
+- Hiển thị: 2D phẳng, hoặc 3D với bàn nghiêng và quân đứng thẳng.
+
 ## Chạy thử
 
 Yêu cầu: Node.js 18 trở lên.

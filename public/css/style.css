@@ -123,14 +123,35 @@ h2 { margin: 0 0 12px; font-size: 1.2rem; }
 }
 .board.flipped { transform: rotate(180deg); }
 
+/* Chất liệu bàn cờ */
+.board.theme-wood { --light-sq: #f0d9b5; --dark-sq: #b58863; border-color: #5b3a1e; }
+.board.theme-green { --light-sq: #eeeed2; --dark-sq: #769656; border-color: #3f5a2a; }
+.board.theme-blue { --light-sq: #dee3e6; --dark-sq: #8ca2ad; border-color: #3d5566; }
+.board.theme-marble { --light-sq: #f7f7f5; --dark-sq: #a9b4bd; border-color: #6c7780; }
+.board.theme-night { --light-sq: #6b7a93; --dark-sq: #2f3a4f; border-color: #151a24; }
+
+/* Hiển thị 3D: bàn nghiêng, quân đứng thẳng */
+.board-wrap { width: 100%; }
+.board-wrap.view3d { perspective: 1400px; padding: 8px 0 24px; }
+.board-wrap.view3d .board { width: min(76vw, 400px); }
+.board.view3d { transform: rotateX(50deg); box-shadow: 0 28px 24px -10px rgba(0, 0, 0, 0.45); }
+.board.view3d.flipped { transform: rotateX(50deg) rotateZ(180deg); }
+.board.view3d .pc { transform: rotateX(-50deg) translateY(-22%); }
+.board.view3d .pc.pw { text-shadow: 0 1px 0 #999, 0 2px 0 #777, 0 3px 0 #555, 0 6px 8px rgba(0, 0, 0, 0.5); }
+.board.view3d .pc.pb { text-shadow: 0 2px 0 #000, 0 5px 8px rgba(0, 0, 0, 0.5); }
+
 .sq {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+}
+.pc {
   font-size: clamp(30px, 10vw, 52px);
   line-height: 1;
-  cursor: pointer;
+  pointer-events: none;
+  transition: transform 0.4s ease;
 }
 .sq.light { background-color: var(--light-sq); }
 .sq.dark { background-color: var(--dark-sq); }
@@ -139,8 +160,42 @@ h2 { margin: 0 0 12px; font-size: 1.2rem; }
 .sq.check {
   background-image: radial-gradient(circle, var(--check) 0%, rgba(229, 72, 77, 0.6) 45%, transparent 70%);
 }
-.sq.pw { color: #ffffff; text-shadow: 0 0 2px #000, 0 0 2px #000, 1px 1px 2px #000; }
-.sq.pb { color: #1a1a1a; }
+.pc.pw { color: #ffffff; text-shadow: 0 0 2px #000, 0 0 2px #000, 1px 1px 2px #000; }
+.pc.pb { color: #1a1a1a; }
+
+/* Kiểu quân "viền": quân trắng là hình rỗng */
+.ps-outline .pc.pw { color: #2b2118; text-shadow: none; }
+.ps-outline .pc.pb { color: #111; text-shadow: none; }
+
+/* Kiểu quân "chữ cái": mỗi quân là một đĩa tròn có ký hiệu */
+.ps-letters .pc {
+  width: 78%;
+  height: 78%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: 700;
+  font-size: clamp(16px, 5.5vw, 28px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  text-shadow: none;
+}
+.ps-letters .pc.pw { background: #fffdf8; color: #222; border: 2px solid #444; }
+.ps-letters .pc.pb { background: #2b2b2b; color: #f5f5f5; border: 2px solid #111; }
+
+/* Mục tùy chỉnh giao diện */
+.settings { font-size: 0.95rem; }
+.settings summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent);
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+.settings .field { margin-top: 10px; }
+.settings-game { margin-top: 14px; }
 
 .sq.target::after {
   content: "";

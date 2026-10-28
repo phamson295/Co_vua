@@ -3,6 +3,11 @@ import { Game, sqName, opponent } from './engine.js';
 import { LEVELS } from './ai.js';
 
 const GLYPH = { K: '♚', Q: '♛', R: '♜', B: '♝', N: '♞', P: '♟' };
+const OUTLINE_GLYPH = { K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙' };
+const DEFAULT_SETTINGS = { pieces: 'classic', board: 'wood', view: '2d' };
+const SETTINGS_KEY = 'co-vua-settings';
+const BOARD_THEMES = ['wood', 'green', 'blue', 'marble', 'night'];
+const PIECE_SETS = ['classic', 'outline', 'letters'];
 const PROMO_NAME = { Q: 'Hậu', R: 'Xe', B: 'Tượng', N: 'Mã' };
 const COLOR_NAME = { w: 'Trắng', b: 'Đen' };
 const REASON_TEXT = {
@@ -21,6 +26,8 @@ const els = {
   onlineSetup: $('#online-setup'),
   game: $('#game'),
   board: $('#board'),
+  boardWrap: $('#board-wrap'),
+  settingSelects: document.querySelectorAll('[data-setting]'),
   modeText: $('#mode-text'),
   turnText: $('#turn-text'),
   status: $('#status'),
@@ -53,13 +60,63 @@ let socket = null;
 
 const aiWorker = new Worker('js/ai-worker.js', { type: 'module' });
 
-// Tạo 64 ô một lần, sau đó chỉ cập nhật nội dung và lớp CSS.
+// Tạo 64 ô một lần, mỗi ô có một phần tử quân riêng; sau đó chỉ cập nhật nội dung và lớp CSS.
 const squares = [];
+const pieceEls = [];
 for (let i = 0; i < 64; i++) {
   const sq = document.createElement('div');
   sq.dataset.i = i;
+  const pc = document.createElement('span');
+  pc.className = 'pc';
+  sq.append(pc);
   squares.push(sq);
+  pieceEls.push(pc);
   els.board.append(sq);
+}
+
+// Thiết lập giao diện, lưu trên trình duyệt (nếu trình duyệt cho phép).
+const settings = loadSettings();
+
+function loadSettings() {
+  try {
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch {
+    // Không lưu được thì vẫn chơi bình thường với thiết lập hiện tại.
+  }
+}
+
+function applySettings() {
+  for (const t of BOARD_THEMES) els.board.classList.toggle(`theme-${t}`, t === settings.board);
+  for (const p of PIECE_SETS) els.board.classList.toggle(`ps-${p}`, p === settings.pieces);
+  const is3d = settings.view === '3d';
+  els.boardWrap.classList.toggle('view3d', is3d);
+  els.board.classList.toggle('view3d', is3d);
+  for (const el of els.settingSelects) el.value = settings[el.dataset.setting];
+}
+
+for (const el of els.settingSelects) {
+  el.addEventListener('change', () => {
+    settings[el.dataset.setting] = el.value;
+    saveSettings();
+    applySettings();
+    render();
+  });
+}
+
+function pieceText(piece) {
+  if (!piece) return '';
+  const type = piece[1];
+  if (settings.pieces === 'letters') return type;
+  if (settings.pieces === 'outline' && piece[0] === 'w') return OUTLINE_GLYPH[type];
+  return GLYPH[type];
 }
 
 function show(screen) {
@@ -122,9 +179,9 @@ function render() {
 
   squares.forEach((sq, i) => {
     const piece = state.board[i];
-    sq.textContent = piece ? GLYPH[piece[1]] : '';
+    pieceEls[i].textContent = pieceText(piece);
+    pieceEls[i].className = piece ? `pc ${piece[0] === 'w' ? 'pw' : 'pb'}` : 'pc';
     sq.className = 'sq ' + (((i >> 3) + (i & 7)) % 2 ? 'dark' : 'light');
-    if (piece) sq.classList.add(piece[0] === 'w' ? 'pw' : 'pb');
     if (last && (i === last.from || i === last.to)) sq.classList.add('last');
     if (i === selected) sq.classList.add('sel');
     if (targets.has(i)) sq.classList.add(piece ? 'capture' : 'target');
@@ -384,4 +441,5 @@ function updateLevelText() {
 }
 updateLevelText();
 
+applySettings();
 show(els.menu);

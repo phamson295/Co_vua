@@ -15,6 +15,34 @@
       <button id="btn-local" class="btn primary">Hai người (cùng một điện thoại)</button>
       <button id="btn-ai" class="btn primary">Chơi với máy</button>
       <button id="btn-online" class="btn primary">Chơi online</button>
+      <details class="settings">
+        <summary>Giao diện: kiểu quân, bàn cờ, 2D / 3D</summary>
+        <label class="field">
+          Kiểu quân
+          <select data-setting="pieces">
+            <option value="classic">Đặc (mặc định)</option>
+            <option value="outline">Viền (quân trắng rỗng)</option>
+            <option value="letters">Chữ cái</option>
+          </select>
+        </label>
+        <label class="field">
+          Bàn cờ
+          <select data-setting="board">
+            <option value="wood">Gỗ</option>
+            <option value="green">Xanh lá</option>
+            <option value="blue">Xanh dương</option>
+            <option value="marble">Đá cẩm thạch</option>
+            <option value="night">Ban đêm</option>
+          </select>
+        </label>
+        <label class="field">
+          Hiển thị
+          <select data-setting="view">
+            <option value="2d">2D (phẳng)</option>
+            <option value="3d">3D (bàn nghiêng, quân đứng)</option>
+          </select>
+        </label>
+      </details>
     </section>
 
     <section id="ai-setup" class="card" hidden>
@@ -53,7 +81,9 @@
         <span id="turn-text" class="turn"></span>
       </div>
 
-      <div id="board" class="board" aria-label="Bàn cờ"></div>
+      <div id="board-wrap" class="board-wrap">
+        <div id="board" class="board theme-wood ps-classic" aria-label="Bàn cờ"></div>
+      </div>
 
       <p id="status" class="status" aria-live="polite"></p>
 
@@ -66,6 +96,35 @@
         <input id="auto-rotate" type="checkbox" checked>
         Xoay bàn cờ theo lượt (để người chơi ngồi đối diện)
       </label>
+
+      <details class="settings settings-game">
+        <summary>Giao diện: kiểu quân, bàn cờ, 2D / 3D</summary>
+        <label class="field">
+          Kiểu quân
+          <select data-setting="pieces">
+            <option value="classic">Đặc (mặc định)</option>
+            <option value="outline">Viền (quân trắng rỗng)</option>
+            <option value="letters">Chữ cái</option>
+          </select>
+        </label>
+        <label class="field">
+          Bàn cờ
+          <select data-setting="board">
+            <option value="wood">Gỗ</option>
+            <option value="green">Xanh lá</option>
+            <option value="blue">Xanh dương</option>
+            <option value="marble">Đá cẩm thạch</option>
+            <option value="night">Ban đêm</option>
+          </select>
+        </label>
+        <label class="field">
+          Hiển thị
+          <select data-setting="view">
+            <option value="2d">2D (phẳng)</option>
+            <option value="3d">3D (bàn nghiêng, quân đứng)</option>
+          </select>
+        </label>
+      </details>
 
       <p id="moves" class="moves"></p>
     </section>
