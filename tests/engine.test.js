@@ -77,6 +77,31 @@ test('hòa do lặp lại thế cờ 3 lần', () => {
   assert.equal(g.status().reason, 'repetition');
 });
 
+test('ký hiệu SAN: nước thường, chiếu hết, nhập thành', () => {
+  const g = new Game();
+  for (const [from, to] of [['f2', 'f3'], ['e7', 'e5'], ['g2', 'g4'], ['d8', 'h4']]) {
+    g.play(sqIndex(from), sqIndex(to));
+  }
+  assert.equal(g.pgn(), '1. f3 e5 2. g4 Qh4#');
+
+  const castle = new Game('r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1');
+  assert.equal(castle.play(sqIndex('e1'), sqIndex('g1')).san, 'O-O');
+  assert.equal(castle.play(sqIndex('e8'), sqIndex('c8')).san, 'O-O-O');
+});
+
+test('ký hiệu SAN: phân biệt hai xe, bắt quân, phong cấp có chiếu', () => {
+  const rooks = new Game('4k3/8/8/8/8/8/K7/R6R w - - 0 1');
+  assert.equal(rooks.play(sqIndex('a1'), sqIndex('d1')).san, 'Rad1');
+  const rooks2 = new Game('4k3/8/8/8/8/8/K7/R6R w - - 0 1');
+  assert.equal(rooks2.play(sqIndex('h1'), sqIndex('d1')).san, 'Rhd1');
+
+  const pawn = new Game('4k3/8/8/3p4/4P3/8/8/4K3 w - - 0 1');
+  assert.equal(pawn.play(sqIndex('e4'), sqIndex('d5')).san, 'exd5');
+
+  const promo = new Game('7k/4P3/8/8/8/8/8/4K3 w - - 0 1');
+  assert.equal(promo.play(sqIndex('e7'), sqIndex('e8'), 'Q').san, 'e8=Q+');
+});
+
 test('hoàn tác nước đi trả lại đúng trạng thái', () => {
   const g = new Game();
   g.play(sqIndex('e2'), sqIndex('e4'));

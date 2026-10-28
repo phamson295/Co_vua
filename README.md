@@ -8,10 +8,17 @@ Game cờ vua chạy trên trình duyệt, dùng được trên điện thoại 
 
 Luật đầy đủ: nhập thành, bắt tốt qua đường, phong cấp, chiếu, chiếu hết, hết nước đi (hòa), lặp lại thế cờ 3 lần (hòa), luật 50 nước (hòa), không đủ quân để chiếu hết (hòa).
 
-**Giao diện** (mục "Giao diện" ở menu và trong ván, lưu trên trình duyệt):
-- Kiểu quân: Đặc (mặc định), Viền (quân trắng rỗng), Chữ cái.
-- Bàn cờ: Gỗ, Xanh lá, Xanh dương, Đá cẩm thạch, Ban đêm.
-- Hiển thị: 2D phẳng, hoặc 3D với bàn nghiêng và quân đứng thẳng.
+## Giao diện
+
+Mở **Giao diện** (biểu tượng bánh răng ở góc trên, hoặc trong menu) để tùy chỉnh. Thiết lập được lưu trên trình duyệt.
+
+- **Kiểu quân cờ**: Cổ điển và Hiện đại (quân vector có hình dạng khác nhau), Ký tự, Chữ cái.
+- **Bàn cờ**: Gỗ, Xanh lá, Xanh dương, Đá cẩm thạch, Ban đêm.
+- **2D / 3D**: 2D phẳng có hoạt ảnh trượt quân. 3D là bàn cờ dựng thật bằng Three.js, có chất liệu, bóng đổ, kéo để xoay góc nhìn, chụm hai ngón để phóng to thu nhỏ, và nút "Đặt lại góc nhìn". Kiểu quân Cổ điển/Hiện đại cũng áp dụng cho quân 3D.
+- **Màu giao diện**: Tự động theo hệ thống, Sáng, Tối.
+- Âm thanh, gợi ý ô có thể đi, tọa độ trên bàn 2D, xoay bàn theo lượt (hai người).
+
+Trong ván có thanh người chơi (quân bị ăn, chênh lệch quân), danh sách nước đi theo ký hiệu chuẩn (`Nf3`, `O-O`, `Qh4#`), nút sao chép PGN, và hộp thoại kết quả khi kết thúc ván. Chơi online có liên kết mời bạn vào phòng (`?room=MÃ`).
 
 ## Chạy thử
 
@@ -37,12 +44,16 @@ server.js                  Máy chủ: phục vụ giao diện, ghép phòng và
 public/
   index.html               Giao diện
   css/style.css
-  js/engine.js             Luật cờ (dùng chung cho trình duyệt và máy chủ)
+  js/engine.js             Luật cờ, ký hiệu SAN/PGN (dùng chung cho trình duyệt và máy chủ)
   js/ai.js                 Máy chơi: alpha-beta, quiescence, 12 cấp độ
   js/ai-worker.js          Chạy việc tính nước của máy ở luồng riêng (không làm đơ giao diện)
-  js/app.js                Điều khiển giao diện
+  js/app.js                Điều khiển giao diện, thiết lập, âm thanh, hộp thoại
+  js/pieces.js             Quân cờ vector (SVG) cho bàn 2D
+  js/board3d.js            Bàn cờ 3D bằng Three.js (chỉ nạp khi chọn 3D)
+  js/sound.js              Âm thanh tạo bằng Web Audio
+  vendor/                  Three.js 0.160.0 và OrbitControls (giấy phép MIT: THREE-LICENSE.txt)
 tests/
-  engine.test.js           Kiểm thử luật bằng perft (đếm nước đi chuẩn) và các trường hợp kết thúc ván
+  engine.test.js           Kiểm thử luật bằng perft (đếm nước đi chuẩn), ký hiệu SAN và các trường hợp kết thúc ván
   ai.test.js               Kiểm thử máy: nước hợp lệ, chiếu hết, thời gian suy nghĩ
 ```
 
@@ -73,4 +84,5 @@ Gói miễn phí của Render sẽ tạm ngủ sau một thời gian không có 
 - Chơi online: không có tính năng nối lại khi tải lại trang hoặc mất mạng. Ván đang chơi sẽ kết thúc nếu một bên rời đi.
 - Máy chủ giữ phòng trong bộ nhớ, nên khởi động lại máy chủ sẽ mất hết phòng đang chờ và ván đang chơi.
 - Chưa có chức năng đề nghị hòa, chat, đồng hồ đếm giờ hay lưu ván.
-- Ô cờ không có ký hiệu tọa độ trên bàn; danh sách nước đi dùng dạng `e2-e4`.
+- Chế độ 3D cần trình duyệt hỗ trợ WebGL; nếu không, ứng dụng tự quay về 2D. Quân 3D là hình khối dựng bằng hình học, chưa phải mô hình chạm khắc chi tiết.
+- Chưa kiểm thử trên nhiều loại điện thoại; hiệu năng 3D phụ thuộc cấu hình máy.

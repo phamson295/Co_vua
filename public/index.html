@@ -1,141 +1,221 @@
 <!doctype html>
-<html lang="vi">
+<html lang="vi" data-theme="auto">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Cờ vua</title>
-  <link rel="icon" href="data:,">
+  <meta name="theme-color" content="#161a22">
+  <title>Cờ Vua</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%99%9E%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three.module.min.js",
+        "three/addons/controls/OrbitControls.js": "./vendor/OrbitControls.js"
+      }
+    }
+  </script>
 </head>
 <body>
-  <main>
-    <h1>♞ Cờ vua</h1>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="gW" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#ffffff"/>
+        <stop offset="1" stop-color="#cfc6b4"/>
+      </linearGradient>
+      <linearGradient id="gB" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#5a5a66"/>
+        <stop offset="1" stop-color="#17171b"/>
+      </linearGradient>
+    </defs>
+  </svg>
 
-    <section id="menu" class="card">
-      <button id="btn-local" class="btn primary">Hai người (cùng một điện thoại)</button>
-      <button id="btn-ai" class="btn primary">Chơi với máy</button>
-      <button id="btn-online" class="btn primary">Chơi online</button>
-      <details class="settings">
-        <summary>Giao diện: kiểu quân, bàn cờ, 2D / 3D</summary>
-        <label class="field">
-          Kiểu quân
-          <select data-setting="pieces">
-            <option value="classic">Đặc (mặc định)</option>
-            <option value="outline">Viền (quân trắng rỗng)</option>
-            <option value="letters">Chữ cái</option>
-          </select>
-        </label>
-        <label class="field">
-          Bàn cờ
-          <select data-setting="board">
-            <option value="wood">Gỗ</option>
-            <option value="green">Xanh lá</option>
-            <option value="blue">Xanh dương</option>
-            <option value="marble">Đá cẩm thạch</option>
-            <option value="night">Ban đêm</option>
-          </select>
-        </label>
-        <label class="field">
-          Hiển thị
-          <select data-setting="view">
-            <option value="2d">2D (phẳng)</option>
-            <option value="3d">3D (bàn nghiêng, quân đứng)</option>
-          </select>
-        </label>
-      </details>
-    </section>
-
-    <section id="ai-setup" class="card" hidden>
-      <h2>Chơi với máy</h2>
-      <label class="field">
-        Bạn cầm quân
-        <select id="ai-color">
-          <option value="w">Trắng (đi trước)</option>
-          <option value="b">Đen</option>
-          <option value="r">Ngẫu nhiên</option>
-        </select>
-      </label>
-      <label class="field">
-        Cấp độ: <strong id="level-text"></strong>
-        <input id="ai-level" type="range" min="1" max="12" value="5">
-        <span class="hint">1 là dễ nhất, 12 là mạnh nhất.</span>
-      </label>
-      <button id="ai-start" class="btn primary">Bắt đầu</button>
-      <button class="btn" data-home>Quay lại</button>
-    </section>
-
-    <section id="online-setup" class="card" hidden>
-      <h2>Chơi online</h2>
-      <button id="create-room" class="btn primary">Tạo phòng mới</button>
-      <div class="join">
-        <input id="room-code" maxlength="5" placeholder="Nhập mã phòng" autocomplete="off" autocapitalize="characters">
-        <button id="join-room" class="btn primary">Vào phòng</button>
+  <div class="app">
+    <header class="topbar">
+      <button class="brand" data-home aria-label="Về trang chủ">
+        <span class="brand-logo" id="brand-logo"></span>
+        <span class="brand-name">Cờ Vua</span>
+      </button>
+      <div class="top-actions">
+        <button id="btn-sound" class="icon-btn" aria-label="Bật/tắt âm thanh" title="Âm thanh"></button>
+        <button id="btn-settings" class="icon-btn" aria-label="Giao diện" title="Giao diện: quân cờ, bàn cờ, 2D / 3D">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
       </div>
-      <p id="online-msg" class="msg"></p>
-      <button class="btn" data-home>Quay lại</button>
-    </section>
+    </header>
 
-    <section id="game" hidden>
-      <div class="info">
-        <span id="mode-text"></span>
-        <span id="turn-text" class="turn"></span>
-      </div>
+    <main>
+      <!-- Menu chính -->
+      <section id="menu" class="screen">
+        <div class="hero">
+          <h1>Cờ Vua</h1>
+          <p>Đấu với máy 12 cấp độ, chơi hai người trên một điện thoại, hoặc thách đấu bạn bè online.</p>
+        </div>
+        <div class="mode-grid">
+          <button id="btn-ai" class="mode-card">
+            <span class="mode-icon" data-icon="wN"></span>
+            <span class="mode-text">
+              <span class="mode-title">Chơi với máy</span>
+              <span class="mode-desc">12 cấp độ, từ người mới tập đến chuyên gia</span>
+            </span>
+          </button>
+          <button id="btn-local" class="mode-card">
+            <span class="mode-icon" data-icon="wQ"></span>
+            <span class="mode-text">
+              <span class="mode-title">Hai người, một máy</span>
+              <span class="mode-desc">Bàn cờ tự xoay theo lượt để ngồi đối diện</span>
+            </span>
+          </button>
+          <button id="btn-online" class="mode-card">
+            <span class="mode-icon" data-icon="wK"></span>
+            <span class="mode-text">
+              <span class="mode-title">Chơi online</span>
+              <span class="mode-desc">Tạo phòng, gửi liên kết cho bạn bè</span>
+            </span>
+          </button>
+        </div>
+        <button id="menu-settings" class="link-btn">Tùy chỉnh quân cờ, bàn cờ, 2D / 3D</button>
+      </section>
 
-      <div id="board-wrap" class="board-wrap">
-        <div id="board" class="board theme-wood ps-classic" aria-label="Bàn cờ"></div>
-      </div>
+      <!-- Thiết lập chơi với máy -->
+      <section id="ai-setup" class="screen panel" hidden>
+        <h2>Chơi với máy</h2>
+        <div class="group">
+          <span class="label">Bạn cầm quân</span>
+          <div id="ai-color" class="segmented" role="radiogroup" aria-label="Chọn màu quân">
+            <button type="button" role="radio" data-value="w" aria-checked="true">Trắng</button>
+            <button type="button" role="radio" data-value="b" aria-checked="false">Đen</button>
+            <button type="button" role="radio" data-value="r" aria-checked="false">Ngẫu nhiên</button>
+          </div>
+        </div>
+        <div class="group">
+          <div class="label-row">
+            <span class="label">Cấp độ</span>
+            <strong id="level-text"></strong>
+          </div>
+          <input id="ai-level" type="range" min="1" max="12" value="5" aria-label="Cấp độ của máy">
+          <p id="level-desc" class="hint"></p>
+        </div>
+        <div class="actions">
+          <button id="ai-start" class="btn primary">Bắt đầu</button>
+          <button class="btn" data-home>Quay lại</button>
+        </div>
+      </section>
 
-      <p id="status" class="status" aria-live="polite"></p>
+      <!-- Thiết lập chơi online -->
+      <section id="online-setup" class="screen panel" hidden>
+        <h2>Chơi online</h2>
+        <button id="create-room" class="btn primary block">Tạo phòng mới</button>
+        <div id="room-box" class="room-box" hidden>
+          <span class="label">Mã phòng</span>
+          <div id="room-code-text" class="room-code"></div>
+          <div class="actions">
+            <button id="copy-room" class="btn">Sao chép liên kết</button>
+            <button id="share-room" class="btn">Chia sẻ</button>
+          </div>
+          <p class="hint">Gửi liên kết hoặc mã này cho bạn bè. Khi họ vào phòng, ván cờ sẽ bắt đầu.</p>
+        </div>
+        <div class="divider"><span>hoặc vào phòng có sẵn</span></div>
+        <div class="join">
+          <input id="room-code" maxlength="5" placeholder="Nhập mã phòng" autocomplete="off" autocapitalize="characters" aria-label="Mã phòng">
+          <button id="join-room" class="btn primary">Vào phòng</button>
+        </div>
+        <p id="online-msg" class="msg" aria-live="polite"></p>
+        <button class="btn" data-home>Quay lại</button>
+      </section>
 
-      <div class="controls">
-        <button id="undo" class="btn">Hoàn tác</button>
-        <button id="resign" class="btn danger">Đầu hàng</button>
-        <button class="btn" data-home>Về menu</button>
-      </div>
-      <label id="rotate-option" class="toggle">
-        <input id="auto-rotate" type="checkbox" checked>
-        Xoay bàn cờ theo lượt (để người chơi ngồi đối diện)
-      </label>
+      <!-- Ván cờ -->
+      <section id="game" class="screen game" hidden>
+        <div class="board-col">
+          <div id="player-top" class="player">
+            <span class="avatar"></span>
+            <span class="pinfo"><span class="pname"></span><span class="psub"></span></span>
+            <span class="pcap"></span>
+          </div>
 
-      <details class="settings settings-game">
-        <summary>Giao diện: kiểu quân, bàn cờ, 2D / 3D</summary>
-        <label class="field">
-          Kiểu quân
-          <select data-setting="pieces">
-            <option value="classic">Đặc (mặc định)</option>
-            <option value="outline">Viền (quân trắng rỗng)</option>
-            <option value="letters">Chữ cái</option>
-          </select>
-        </label>
-        <label class="field">
-          Bàn cờ
-          <select data-setting="board">
-            <option value="wood">Gỗ</option>
-            <option value="green">Xanh lá</option>
-            <option value="blue">Xanh dương</option>
-            <option value="marble">Đá cẩm thạch</option>
-            <option value="night">Ban đêm</option>
-          </select>
-        </label>
-        <label class="field">
-          Hiển thị
-          <select data-setting="view">
-            <option value="2d">2D (phẳng)</option>
-            <option value="3d">3D (bàn nghiêng, quân đứng)</option>
-          </select>
-        </label>
-      </details>
+          <div id="stage" class="stage">
+            <div id="board" class="board theme-wood" aria-label="Bàn cờ"></div>
+            <div id="board3d" class="board3d" hidden aria-label="Bàn cờ 3D"></div>
+          </div>
 
-      <p id="moves" class="moves"></p>
-    </section>
-  </main>
+          <div id="player-bottom" class="player">
+            <span class="avatar"></span>
+            <span class="pinfo"><span class="pname"></span><span class="psub"></span></span>
+            <span class="pcap"></span>
+          </div>
+        </div>
 
-  <div id="promo" class="overlay" hidden>
-    <div class="dialog">
-      <p>Chọn quân để phong cấp:</p>
-      <div id="promo-choices" class="promo-choices"></div>
-    </div>
+        <div class="side-col">
+          <p id="status" class="status" aria-live="polite"></p>
+          <div class="controls">
+            <button id="undo" class="btn">Hoàn tác</button>
+            <button id="new-game" class="btn">Ván mới</button>
+            <button id="resign" class="btn danger">Đầu hàng</button>
+            <button id="reset-cam" class="btn" hidden>Đặt lại góc nhìn</button>
+            <button id="copy-pgn" class="btn">Sao chép PGN</button>
+            <button class="btn" data-home>Về menu</button>
+          </div>
+          <div class="movebox">
+            <div class="movebox-title">Các nước đã đi</div>
+            <ol id="moves" class="moves"></ol>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
+
+  <!-- Hộp thoại giao diện -->
+  <dialog id="settings-dialog" class="dialog">
+    <div class="dialog-head">
+      <h2>Giao diện</h2>
+      <button id="settings-close" class="icon-btn" aria-label="Đóng">✕</button>
+    </div>
+    <div class="dialog-body">
+      <div class="group">
+        <span class="label">Kiểu quân cờ</span>
+        <div id="opt-pieces" class="chips" role="radiogroup" aria-label="Kiểu quân cờ"></div>
+      </div>
+      <div class="group">
+        <span class="label">Bàn cờ</span>
+        <div id="opt-board" class="chips" role="radiogroup" aria-label="Bàn cờ"></div>
+      </div>
+      <div class="group">
+        <span class="label">Hiển thị</span>
+        <div id="opt-view" class="segmented" role="radiogroup" aria-label="Hiển thị 2D hoặc 3D"></div>
+        <p class="hint">Chế độ 3D cho phép kéo để xoay bàn cờ, chụm hai ngón để phóng to, thu nhỏ.</p>
+      </div>
+      <div class="group">
+        <span class="label">Màu giao diện</span>
+        <div id="opt-theme" class="segmented" role="radiogroup" aria-label="Màu giao diện"></div>
+      </div>
+      <div class="group switches">
+        <label class="switch"><input id="opt-sound" type="checkbox"><span class="track"></span>Âm thanh</label>
+        <label class="switch"><input id="opt-hints" type="checkbox"><span class="track"></span>Gợi ý các ô có thể đi</label>
+        <label class="switch"><input id="opt-coords" type="checkbox"><span class="track"></span>Hiện tọa độ trên bàn cờ 2D</label>
+        <label class="switch"><input id="opt-rotate" type="checkbox"><span class="track"></span>Hai người: xoay bàn cờ theo lượt</label>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Hộp thoại phong cấp -->
+  <dialog id="promo-dialog" class="dialog small">
+    <div class="dialog-head"><h2>Phong cấp thành</h2></div>
+    <div id="promo-choices" class="promo-choices"></div>
+  </dialog>
+
+  <!-- Hộp thoại kết quả -->
+  <dialog id="result-dialog" class="dialog small result">
+    <div class="result-icon" id="result-icon"></div>
+    <h2 id="result-title"></h2>
+    <p id="result-text"></p>
+    <div class="actions column">
+      <button id="result-new" class="btn primary">Ván mới</button>
+      <button id="result-view" class="btn">Xem lại bàn cờ</button>
+      <button id="result-home" class="btn">Về menu</button>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <script type="module" src="js/app.js"></script>
 </body>

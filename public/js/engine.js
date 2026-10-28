@@ -253,6 +253,35 @@ export function legalMoves(state) {
   return pseudoMoves(state).filter((m) => !isInCheck(applyMove(state, m).board, state.turn));
 }
 
+// Ký hiệu đại số chuẩn (SAN) của nước `m` đi từ thế `state`, ví dụ: e4, Nf3, exd5, O-O, e8=Q+, Qh4#
+export function toSan(state, m) {
+  const type = m.piece[1];
+  const capture = m.captured || m.ep;
+  let san;
+  if (m.castle) {
+    san = m.to > m.from ? 'O-O' : 'O-O-O';
+  } else if (type === 'P') {
+    san = (capture ? FILES[m.from & 7] + 'x' : '') + sqName(m.to) + (m.promo ? '=' + m.promo : '');
+  } else {
+    // Khi có quân cùng loại khác cũng đi được tới ô đích thì thêm cột/hàng/ô xuất phát để phân biệt.
+    const rivals = legalMoves(state).filter(
+      (x) => x.piece === m.piece && x.to === m.to && x.from !== m.from,
+    );
+    let from = '';
+    if (rivals.length > 0) {
+      const sameFile = rivals.some((x) => (x.from & 7) === (m.from & 7));
+      const sameRank = rivals.some((x) => x.from >> 3 === m.from >> 3);
+      if (!sameFile) from = FILES[m.from & 7];
+      else if (!sameRank) from = String(8 - (m.from >> 3));
+      else from = sqName(m.from);
+    }
+    san = type + from + (capture ? 'x' : '') + sqName(m.to);
+  }
+  const next = applyMove(state, m);
+  if (isInCheck(next.board, next.turn)) san += legalMoves(next).length > 0 ? '+' : '#';
+  return san;
+}
+
 // Khóa định danh thế cờ, dùng để phát hiện lặp lại 3 lần.
 export const positionKey = (s) => s.board.map((p) => p || '.').join('') + s.turn + s.castling + s.ep;
 
@@ -292,10 +321,16 @@ export class Game {
       (x) => x.from === from && x.to === to && x.promo === (promo || null),
     );
     if (!m) return null;
+    m.san = toSan(this.state, m);
     this.states.push(applyMove(this.state, m));
     this.keys.push(positionKey(this.state));
     this.moves.push(m);
     return m;
+  }
+
+  // Các nước đi dạng PGN: "1. e4 e5 2. Nf3 Nc6"
+  pgn() {
+    return this.moves.map((m, i) => (i % 2 === 0 ? `${i / 2 + 1}. ${m.san}` : m.san)).join(' ');
   }
 
   undo() {
