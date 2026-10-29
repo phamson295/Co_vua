@@ -67,6 +67,10 @@ Mỗi tài khoản mạng xã hội là một tài khoản riêng, không tự g
 - Đăng nhập Google/Facebook chưa được thử với khóa thật (đã kiểm thử luồng OAuth với máy chủ giả lập). Chưa có Zalo, Apple.
 - Chưa có xóa tài khoản và đổi tên hiển thị.
 
+## Tài liệu thiết kế
+
+- [Hệ thống chấm điểm và xếp hạng](docs/he-thong-xep-hang-va-diem-so.md): phân tích Elo, Glicko/Glicko-2, EXP và Cấp độ, Điểm giải đấu (Swiss, Arena), Thành tựu và Puzzle Rating, kèm mã tham khảo và gợi ý tích hợp.
+
 ## Chạy thử
 
 Yêu cầu: Node.js 18 trở lên.
