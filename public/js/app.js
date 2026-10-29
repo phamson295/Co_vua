@@ -3,6 +3,7 @@ import { Game, opponent } from './engine.js';
 import { LEVELS } from './ai.js';
 import { pieceSvg } from './pieces.js';
 import { play as playSound, setSoundEnabled } from './sound.js';
+import { initAccount, getUser } from './account.js';
 
 const GLYPH = { K: '♚', Q: '♛', R: '♜', B: '♝', N: '♞', P: '♟' };
 const PIECE_NAME = { Q: 'Hậu', R: 'Xe', B: 'Tượng', N: 'Mã' };
@@ -96,6 +97,7 @@ let mode = null; // 'local' | 'ai' | 'online'
 let humanColor = 'w'; // quân của người chơi khi đấu với máy
 let aiLevel = 5;
 let myColor = 'w'; // quân của người chơi khi chơi online
+let onlineNames = {}; // tên hai bên do máy chủ gửi: { w, b }
 let roomCode = '';
 let selected = null;
 let finished = null; // { text, winner }: kết thúc do đầu hàng hoặc mất kết nối
@@ -370,13 +372,13 @@ function statusText(status) {
 function playerInfo(color) {
   if (mode === 'ai') {
     return color === humanColor
-      ? { name: 'Bạn', sub: `Quân ${COLOR_NAME[color]}` }
+      ? { name: getUser()?.name ?? 'Bạn', sub: `Bạn · quân ${COLOR_NAME[color]}` }
       : { name: `Máy – cấp ${aiLevel}`, sub: LEVELS[aiLevel - 1].name };
   }
   if (mode === 'online') {
     return color === myColor
-      ? { name: 'Bạn', sub: `Quân ${COLOR_NAME[color]} · phòng ${roomCode}` }
-      : { name: 'Đối thủ', sub: `Quân ${COLOR_NAME[color]}` };
+      ? { name: onlineNames[color] || 'Bạn', sub: `Bạn · quân ${COLOR_NAME[color]} · phòng ${roomCode}` }
+      : { name: onlineNames[color] || 'Đối thủ', sub: `Đối thủ · quân ${COLOR_NAME[color]}` };
   }
   return { name: `Quân ${COLOR_NAME[color]}`, sub: `Người chơi ${color === 'w' ? 1 : 2}` };
 }
@@ -708,6 +710,7 @@ function handleServer(msg) {
     case 'start':
       myColor = msg.color;
       roomCode = msg.code;
+      onlineNames = msg.names ?? {};
       resetGame('online');
       break;
     case 'move': {
@@ -864,6 +867,15 @@ updateLevelText();
 // ---------- Khởi động ----------
 applySettings();
 show('menu');
+initAccount({
+  button: $('#btn-account'),
+  banner: $('#account-banner'),
+  dialog: $('#account-dialog'),
+  onChange: () => {
+    if (mode !== null) render();
+  },
+  toast,
+});
 
 // Móc gỡ lỗi cho kiểm thử tự động, chỉ bật khi mở trang với ?debug
 if (new URLSearchParams(location.search).has('debug')) {

@@ -20,6 +20,53 @@ Mở **Giao diện** (biểu tượng bánh răng ở góc trên, hoặc trong m
 
 Trong ván có thanh người chơi (quân bị ăn, chênh lệch quân), danh sách nước đi theo ký hiệu chuẩn (`Nf3`, `O-O`, `Qh4#`), nút sao chép PGN, và hộp thoại kết quả khi kết thúc ván. Chơi online có liên kết mời bạn vào phòng (`?room=MÃ`).
 
+## Tài khoản
+
+Không bắt buộc đăng nhập: khách vẫn chơi được mọi chế độ. Có bốn cách vào:
+
+| Cách | Cần gì | Ghi chú |
+|---|---|---|
+| **Chơi không đăng ký** | Không cần gì | Chơi online với tên `Khách-xxxx`, không có thống kê |
+| **Chơi nhanh** (tài khoản nhanh) | Chỉ một biệt danh | Dùng được ngay; gắn email sau để đăng nhập lại trên thiết bị khác |
+| **Email** | Tên hiển thị, email, mật khẩu (từ 8 ký tự) | Mật khẩu băm bằng scrypt |
+| **Google / Facebook** | Quản trị viên cấu hình khóa OAuth | Nút tự bật khi có đủ khóa |
+
+Người đã đăng nhập dùng tên của mình khi chơi online (đối thủ thấy tên đó) và ván online được ghi vào thống kê (ván, thắng, thua, hòa). Bỏ cuộc giữa chừng bằng cách thoát phòng hiện chưa bị tính thua.
+
+### Cấu hình đăng nhập mạng xã hội
+
+Tạo ứng dụng OAuth trong [Google Cloud Console](https://console.cloud.google.com/apis/credentials) và [Meta for Developers](https://developers.facebook.com/), thêm địa chỉ chuyển hướng (redirect URI):
+
+- Google: `https://TÊN-MIỀN/api/auth/google/callback`
+- Facebook: `https://TÊN-MIỀN/api/auth/facebook/callback`
+
+Sau đó đặt biến môi trường trên máy chủ:
+
+| Biến | Ý nghĩa |
+|---|---|
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Bật nút "Tiếp tục với Google" |
+| `FACEBOOK_CLIENT_ID`, `FACEBOOK_CLIENT_SECRET` | Bật nút "Tiếp tục với Facebook" |
+| `PUBLIC_URL` | Địa chỉ công khai của trang (ví dụ `https://co-vua.onrender.com`), dùng tạo redirect URI. Trên Render tự lấy từ `RENDER_EXTERNAL_URL` |
+| `SESSION_SECRET` | Khóa ký phiên đăng nhập. Nếu bỏ trống, máy chủ tự sinh và lưu trong thư mục dữ liệu |
+| `DATA_DIR` | Thư mục lưu dữ liệu người dùng (mặc định `./data`) |
+| `TRUST_PROXY` | Đặt `1` khi chạy sau proxy (tự bật trên Render) để nhận đúng địa chỉ IP và HTTPS |
+
+Mỗi tài khoản mạng xã hội là một tài khoản riêng, không tự gộp với tài khoản email trùng địa chỉ (vì email của tài khoản thường chưa được xác minh, gộp tự động sẽ cho phép chiếm tài khoản).
+
+### Bảo mật đã làm
+
+- Mật khẩu băm bằng scrypt có muối riêng; so sánh thời gian cố định; không bao giờ trả mật khẩu băm về trình duyệt.
+- Phiên đăng nhập là cookie `HttpOnly`, `SameSite=Lax` (thêm `Secure` khi chạy HTTPS), có chữ ký HMAC và hạn 90 ngày.
+- Giới hạn số lần thử đăng nhập/đăng ký theo IP và theo email; thông báo lỗi không tiết lộ email có tồn tại hay không.
+- Kiểm tra `Origin` với các yêu cầu ghi dữ liệu; OAuth dùng tham số `state` chống giả mạo yêu cầu.
+
+### Giới hạn của phần tài khoản
+
+- **Dữ liệu lưu trong một file JSON.** Trên gói miễn phí của Render, ổ đĩa là tạm thời nên **tài khoản sẽ mất sau mỗi lần deploy hoặc khởi động lại**. Muốn lưu lâu dài cần gắn ổ đĩa bền vững (đặt `DATA_DIR` vào đó) hoặc đổi `server/store.js` sang cơ sở dữ liệu thật (ví dụ PostgreSQL). Cách này cũng chỉ phù hợp một máy chủ duy nhất.
+- Chưa xác minh email và chưa có chức năng quên mật khẩu (cần dịch vụ gửi email như SMTP hoặc Resend).
+- Đăng nhập Google/Facebook chưa được thử với khóa thật (đã kiểm thử luồng OAuth với máy chủ giả lập). Chưa có Zalo, Apple.
+- Chưa có xóa tài khoản và đổi tên hiển thị.
+
 ## Chạy thử
 
 Yêu cầu: Node.js 18 trở lên.
@@ -40,7 +87,10 @@ npm test
 ## Cấu trúc
 
 ```
-server.js                  Máy chủ: phục vụ giao diện, ghép phòng và chuyển nước đi (WebSocket /ws)
+server.js                  Máy chủ: phục vụ giao diện, API tài khoản (/api), ghép phòng và chuyển nước đi (WebSocket /ws)
+server/
+  auth.js                  Đăng ký, đăng nhập, tài khoản nhanh, OAuth, phiên đăng nhập
+  store.js                 Lưu người dùng vào file JSON
 public/
   index.html               Giao diện
   css/style.css
@@ -51,10 +101,12 @@ public/
   js/pieces.js             Quân cờ vector (SVG) cho bàn 2D
   js/board3d.js            Bàn cờ 3D bằng Three.js (chỉ nạp khi chọn 3D)
   js/sound.js              Âm thanh tạo bằng Web Audio
+  js/account.js            Giao diện đăng nhập, đăng ký, chơi nhanh, hồ sơ
   vendor/                  Three.js 0.160.0 và OrbitControls (giấy phép MIT: THREE-LICENSE.txt)
 tests/
   engine.test.js           Kiểm thử luật bằng perft (đếm nước đi chuẩn), ký hiệu SAN và các trường hợp kết thúc ván
   ai.test.js               Kiểm thử máy: nước hợp lệ, chiếu hết, thời gian suy nghĩ
+  auth.test.js             Kiểm thử tài khoản, OAuth (máy chủ giả lập), tên người chơi và thống kê online
 ```
 
 ## Các cấp độ máy
