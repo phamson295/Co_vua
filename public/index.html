@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#161a22">
+  <meta name="description" content="Chơi cờ vua trên trình duyệt: đấu với máy 12 cấp độ, hai người trên một máy, chơi online có xếp hạng.">
   <title>Cờ Vua</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%99%9E%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/style.css">
@@ -37,6 +38,9 @@
         <span class="brand-name">Cờ Vua</span>
       </button>
       <div class="top-actions">
+        <button id="btn-leaderboard" class="icon-btn" aria-label="Bảng xếp hạng" title="Bảng xếp hạng">
+          <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></svg>
+        </button>
         <button id="btn-account" class="icon-btn" aria-label="Tài khoản" title="Tài khoản"></button>
         <button id="btn-sound" class="icon-btn" aria-label="Bật/tắt âm thanh" title="Âm thanh"></button>
         <button id="btn-settings" class="icon-btn" aria-label="Giao diện" title="Giao diện: quân cờ, bàn cờ, 2D / 3D">
@@ -50,33 +54,45 @@
       <section id="menu" class="screen">
         <div class="hero">
           <h1>Cờ Vua</h1>
-          <p>Đấu với máy 12 cấp độ, chơi hai người trên một điện thoại, hoặc thách đấu bạn bè online.</p>
+          <p>Đấu với máy 12 cấp độ, chơi hai người trên một điện thoại, hoặc thách đấu bạn bè online có xếp hạng.</p>
         </div>
         <div id="account-banner" class="account-banner"></div>
+        <button id="resume-card" class="resume-card" hidden>
+          <span class="resume-icon" aria-hidden="true">▶</span>
+          <span class="resume-text">
+            <strong>Tiếp tục ván đang chơi</strong>
+            <span id="resume-desc"></span>
+          </span>
+          <span class="resume-discard" id="resume-discard" role="button" tabindex="0" aria-label="Bỏ ván đang lưu" title="Bỏ ván đang lưu">✕</span>
+        </button>
         <div class="mode-grid">
           <button id="btn-ai" class="mode-card">
             <span class="mode-icon" data-icon="wN"></span>
             <span class="mode-text">
               <span class="mode-title">Chơi với máy</span>
-              <span class="mode-desc">12 cấp độ, từ người mới tập đến chuyên gia</span>
+              <span class="mode-desc">12 cấp độ, Elo luyện tập, gợi ý nước đi</span>
             </span>
           </button>
           <button id="btn-local" class="mode-card">
             <span class="mode-icon" data-icon="wQ"></span>
             <span class="mode-text">
               <span class="mode-title">Hai người, một máy</span>
-              <span class="mode-desc">Bàn cờ tự xoay theo lượt để ngồi đối diện</span>
+              <span class="mode-desc">Có đồng hồ, bàn cờ tự xoay theo lượt</span>
             </span>
           </button>
           <button id="btn-online" class="mode-card">
             <span class="mode-icon" data-icon="wK"></span>
             <span class="mode-text">
               <span class="mode-title">Chơi online</span>
-              <span class="mode-desc">Tạo phòng, gửi liên kết cho bạn bè</span>
+              <span class="mode-desc">Mời bạn bè bằng liên kết, có xếp hạng</span>
             </span>
           </button>
         </div>
-        <button id="menu-settings" class="link-btn">Tùy chỉnh quân cờ, bàn cờ, 2D / 3D</button>
+        <div class="menu-links">
+          <button id="menu-leaderboard" class="link-btn">Bảng xếp hạng</button>
+          <span aria-hidden="true">·</span>
+          <button id="menu-settings" class="link-btn">Tùy chỉnh quân cờ, bàn cờ, 2D / 3D</button>
+        </div>
       </section>
 
       <!-- Thiết lập chơi với máy -->
@@ -84,10 +100,10 @@
         <h2>Chơi với máy</h2>
         <div class="group">
           <span class="label">Bạn cầm quân</span>
-          <div id="ai-color" class="segmented" role="radiogroup" aria-label="Chọn màu quân">
-            <button type="button" role="radio" data-value="w" aria-checked="true">Trắng</button>
-            <button type="button" role="radio" data-value="b" aria-checked="false">Đen</button>
-            <button type="button" role="radio" data-value="r" aria-checked="false">Ngẫu nhiên</button>
+          <div id="ai-color" class="segmented icons" role="radiogroup" aria-label="Chọn màu quân">
+            <button type="button" role="radio" data-value="w" aria-checked="true"><span class="seg-icon" data-icon="wK"></span>Trắng</button>
+            <button type="button" role="radio" data-value="r" aria-checked="false"><span class="seg-icon random" aria-hidden="true">?</span>Ngẫu nhiên</button>
+            <button type="button" role="radio" data-value="b" aria-checked="false"><span class="seg-icon" data-icon="bK"></span>Đen</button>
           </div>
         </div>
         <div class="group">
@@ -97,6 +113,11 @@
           </div>
           <input id="ai-level" type="range" min="1" max="12" value="5" aria-label="Cấp độ của máy">
           <p id="level-desc" class="hint"></p>
+          <div id="practice-box" class="practice-box"></div>
+        </div>
+        <div class="group">
+          <span class="label">Thời gian</span>
+          <div id="ai-tc" class="tc-grid" role="radiogroup" aria-label="Thời gian mỗi bên"></div>
         </div>
         <div class="actions">
           <button id="ai-start" class="btn primary">Bắt đầu</button>
@@ -104,18 +125,39 @@
         </div>
       </section>
 
+      <!-- Thiết lập hai người một máy -->
+      <section id="local-setup" class="screen panel" hidden>
+        <h2>Hai người, một máy</h2>
+        <div class="group">
+          <span class="label">Thời gian mỗi bên</span>
+          <div id="local-tc" class="tc-grid" role="radiogroup" aria-label="Thời gian mỗi bên"></div>
+        </div>
+        <label class="switch"><input id="local-rotate" type="checkbox"><span class="track"></span>Xoay bàn cờ theo lượt (ngồi đối diện)</label>
+        <div class="actions">
+          <button id="local-start" class="btn primary">Bắt đầu</button>
+          <button class="btn" data-home>Quay lại</button>
+        </div>
+      </section>
+
       <!-- Thiết lập chơi online -->
       <section id="online-setup" class="screen panel" hidden>
         <h2>Chơi online</h2>
+        <div class="group">
+          <span class="label">Thời gian mỗi bên</span>
+          <div id="online-tc" class="tc-grid" role="radiogroup" aria-label="Thời gian mỗi bên"></div>
+        </div>
+        <label class="switch"><input id="online-rated" type="checkbox" checked><span class="track"></span>Tính điểm xếp hạng</label>
+        <p id="rated-hint" class="hint"></p>
         <button id="create-room" class="btn primary block">Tạo phòng mới</button>
         <div id="room-box" class="room-box" hidden>
           <span class="label">Mã phòng</span>
           <div id="room-code-text" class="room-code"></div>
+          <div id="room-info" class="room-info"></div>
           <div class="actions">
             <button id="copy-room" class="btn">Sao chép liên kết</button>
             <button id="share-room" class="btn">Chia sẻ</button>
           </div>
-          <p class="hint">Gửi liên kết hoặc mã này cho bạn bè. Khi họ vào phòng, ván cờ sẽ bắt đầu.</p>
+          <p class="hint waiting"><span class="dot-pulse" aria-hidden="true"></span>Đang chờ bạn bè vào phòng...</p>
         </div>
         <div class="divider"><span>hoặc vào phòng có sẵn</span></div>
         <div class="join">
@@ -131,35 +173,79 @@
         <div class="board-col">
           <div id="player-top" class="player">
             <span class="avatar"></span>
-            <span class="pinfo"><span class="pname"></span><span class="psub"></span></span>
+            <span class="pinfo">
+              <span class="pname-row"><span class="pname"></span><span class="prating"></span></span>
+              <span class="psub"></span>
+            </span>
             <span class="pcap"></span>
+            <span class="pbubble" hidden></span>
+            <span class="clock" hidden></span>
           </div>
 
           <div id="stage" class="stage">
             <div id="board" class="board theme-wood" aria-label="Bàn cờ"></div>
             <div id="board3d" class="board3d" hidden aria-label="Bàn cờ 3D"></div>
+            <div id="review-banner" class="review-banner" hidden>
+              <span id="review-text"></span>
+              <button id="review-live" class="btn small primary">Về nước hiện tại</button>
+            </div>
           </div>
 
           <div id="player-bottom" class="player">
             <span class="avatar"></span>
-            <span class="pinfo"><span class="pname"></span><span class="psub"></span></span>
+            <span class="pinfo">
+              <span class="pname-row"><span class="pname"></span><span class="prating"></span></span>
+              <span class="psub"></span>
+            </span>
             <span class="pcap"></span>
+            <span class="pbubble" hidden></span>
+            <span class="clock" hidden></span>
           </div>
         </div>
 
         <div class="side-col">
-          <p id="status" class="status" aria-live="polite"></p>
-          <div class="controls">
-            <button id="undo" class="btn">Hoàn tác</button>
-            <button id="new-game" class="btn">Ván mới</button>
-            <button id="resign" class="btn danger">Đầu hàng</button>
-            <button id="reset-cam" class="btn" hidden>Đặt lại góc nhìn</button>
-            <button id="copy-pgn" class="btn">Sao chép PGN</button>
-            <button class="btn" data-home>Về menu</button>
+          <div class="info-card">
+            <div class="game-head">
+              <span id="game-title" class="game-title"></span>
+              <span id="game-badges" class="badges"></span>
+            </div>
+            <p id="status" class="status" aria-live="polite"></p>
+            <div id="offer-bar" class="offer-bar" hidden>
+              <span id="offer-text"></span>
+              <span class="offer-actions">
+                <button id="offer-accept" class="btn small primary">Đồng ý</button>
+                <button id="offer-decline" class="btn small">Từ chối</button>
+              </span>
+            </div>
           </div>
+
+          <div class="toolbar" id="toolbar">
+            <button class="tool" id="tool-hint" title="Gợi ý nước đi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg><span>Gợi ý</span></button>
+            <button class="tool" id="tool-undo" title="Hoàn tác"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg><span>Hoàn tác</span></button>
+            <button class="tool" id="tool-draw" title="Xin hòa"><svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="17.5" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" stroke="none">½</text></svg><span>Xin hòa</span></button>
+            <button class="tool danger" id="tool-resign" title="Đầu hàng"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 22V4"/><path d="M5 4h12l-2.5 4L17 12H5"/></svg><span>Đầu hàng</span></button>
+            <button class="tool" id="tool-rematch" title="Tái đấu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg><span>Tái đấu</span></button>
+            <button class="tool" id="tool-new" title="Ván mới"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span>Ván mới</span></button>
+            <button class="tool" id="tool-flip" title="Lật bàn cờ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 16V4"/><path d="m3 8 4-4 4 4"/><path d="M17 8v12"/><path d="m21 16-4 4-4-4"/></svg><span>Lật bàn</span></button>
+            <button class="tool" id="tool-cam" title="Đặt lại góc nhìn 3D"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span>Góc nhìn</span></button>
+            <button class="tool" id="tool-pgn" title="Sao chép PGN"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg><span>PGN</span></button>
+            <button class="tool" id="tool-home" title="Về menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/></svg><span>Thoát</span></button>
+          </div>
+
+          <div id="chat-bar" class="chat-bar" hidden></div>
+
           <div class="movebox">
-            <div class="movebox-title">Các nước đã đi</div>
+            <div class="movebox-head">
+              <span class="movebox-title">Các nước đã đi</span>
+              <span id="review-pos" class="review-pos"></span>
+            </div>
             <ol id="moves" class="moves"></ol>
+            <div class="nav-row">
+              <button id="nav-first" class="nav-btn" aria-label="Về đầu ván" title="Về đầu ván"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/></svg></button>
+              <button id="nav-prev" class="nav-btn" aria-label="Nước trước" title="Nước trước (←)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+              <button id="nav-next" class="nav-btn" aria-label="Nước sau" title="Nước sau (→)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+              <button id="nav-last" class="nav-btn" aria-label="Nước hiện tại" title="Nước hiện tại"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 17 5-5-5-5"/><path d="m6 17 5-5-5-5"/></svg></button>
+            </div>
           </div>
         </div>
       </section>
@@ -208,6 +294,19 @@
     <div id="account-body" class="dialog-body"></div>
   </dialog>
 
+  <!-- Hộp thoại bảng xếp hạng -->
+  <dialog id="leaderboard-dialog" class="dialog">
+    <div class="dialog-head">
+      <h2>Bảng xếp hạng</h2>
+      <button id="leaderboard-close" class="icon-btn" aria-label="Đóng">✕</button>
+    </div>
+    <div class="dialog-body">
+      <div id="lb-pools" class="segmented" role="radiogroup" aria-label="Nhóm xếp hạng"></div>
+      <ol id="lb-list" class="lb-list"></ol>
+      <p class="hint">Xếp theo rating Glicko-2 đã trừ độ bất định, nên người mới chưa thể vượt lên đầu bảng sau vài ván may mắn. Dấu "?" là rating tạm, chưa đủ ván để chắc chắn.</p>
+    </div>
+  </dialog>
+
   <!-- Hộp thoại phong cấp -->
   <dialog id="promo-dialog" class="dialog small">
     <div class="dialog-head"><h2>Phong cấp thành</h2></div>
@@ -219,9 +318,11 @@
     <div class="result-icon" id="result-icon"></div>
     <h2 id="result-title"></h2>
     <p id="result-text"></p>
+    <div id="result-extra" class="result-extra"></div>
     <div class="actions column">
       <button id="result-new" class="btn primary">Ván mới</button>
-      <button id="result-view" class="btn">Xem lại bàn cờ</button>
+      <button id="result-rematch" class="btn primary">Tái đấu</button>
+      <button id="result-view" class="btn">Xem lại ván cờ</button>
       <button id="result-home" class="btn">Về menu</button>
     </div>
   </dialog>

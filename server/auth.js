@@ -3,6 +3,8 @@
 // Người chơi không đăng nhập vẫn chơi được bình thường với tư cách khách.
 import crypto from 'node:crypto';
 import { promisify } from 'node:util';
+import { POOLS } from '../public/js/shared.js';
+import { PROVISIONAL_RD, levelFromXp, botXp, BOT_XP_DAILY_CAP } from '../public/js/rating.js';
 
 const scrypt = promisify(crypto.scrypt);
 
@@ -75,6 +77,13 @@ async function verifyPassword(password, stored) {
 }
 
 export function publicUser(user) {
+  const ratings = {};
+  for (const pool of Object.keys(POOLS)) {
+    const r = user.ratings?.[pool];
+    ratings[pool] = r
+      ? { rating: Math.round(r.rating), games: r.games, provisional: r.rd > PROVISIONAL_RD }
+      : { rating: 1500, games: 0, provisional: true };
+  }
   return {
     id: user.id,
     name: user.name,
@@ -82,6 +91,8 @@ export function publicUser(user) {
     email: user.loginEmail ?? user.contactEmail ?? null,
     providers: Object.keys(user.providers ?? {}),
     stats: user.stats,
+    ratings,
+    xp: { total: user.xp ?? 0, ...levelFromXp(user.xp ?? 0) },
     createdAt: user.createdAt,
   };
 }
@@ -268,6 +279,27 @@ export function createAuth({ store, env = process.env }) {
     json(res, 200, { user: publicUser(user) });
   }
 
+  // ----- Tiến trình: EXP từ ván đấu với Bot (máy người chơi báo về, có trần mỗi ngày) -----
+  async function botProgress(req, res) {
+    const user = userFromRequest(req);
+    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.');
+    if (limited(`bot:${user.id}`, 120, 3600 * 1000)) throw new HttpError(429, 'Gửi kết quả quá nhanh, hãy thử lại sau.');
+    const body = await readJson(req);
+    const level = Number(body.level);
+    const plies = Number(body.plies);
+    if (!Number.isInteger(level) || level < 1 || level > 12) throw new HttpError(400, 'Cấp Bot không hợp lệ.');
+    if (!['win', 'draw', 'loss'].includes(body.result)) throw new HttpError(400, 'Kết quả không hợp lệ.');
+    if (!Number.isInteger(plies) || plies < 0 || plies > 1000) throw new HttpError(400, 'Số nước không hợp lệ.');
+    const xp = store.addXp(user, botXp(level, body.result, plies), { source: 'bot', dailyCap: BOT_XP_DAILY_CAP });
+    json(res, 200, { xp });
+  }
+
+  function leaderboard(res, url) {
+    const pool = url.searchParams.get('pool');
+    if (!POOLS[pool]) throw new HttpError(400, 'Nhóm xếp hạng không hợp lệ.');
+    json(res, 200, { pool, players: store.leaderboard(pool) });
+  }
+
   function logout(req, res) {
     addCookie(res, cookie(req, SESSION_COOKIE, '', 0));
     json(res, 200, { ok: true });
@@ -366,6 +398,8 @@ export function createAuth({ store, env = process.env }) {
         case 'POST /api/auth/quick': return await quick(req, res);
         case 'POST /api/auth/upgrade': return await upgrade(req, res);
         case 'POST /api/auth/logout': return logout(req, res);
+        case 'POST /api/progress/bot': return await botProgress(req, res);
+        case 'GET /api/leaderboard': return leaderboard(res, url);
         default: return json(res, 404, { error: 'Không tìm thấy.' });
       }
     } catch (error) {

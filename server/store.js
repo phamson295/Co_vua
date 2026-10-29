@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { DEFAULT_RATING, PROVISIONAL_RD, rateGame, levelFromXp } from '../public/js/rating.js';
 
 const SAVE_DELAY_MS = 300;
 
@@ -90,6 +91,55 @@ export class Store {
     user.kind = 'email';
     this.index(user);
     this.saveSoon();
+  }
+
+  // ----- Rating (Glicko-2) theo nhóm thời gian: bullet, blitz, rapid -----
+  getRating(user, pool) {
+    return user.ratings?.[pool] ?? { ...DEFAULT_RATING };
+  }
+
+  // Ghi một ván có xếp hạng; scoreW: 1 Trắng thắng, 0,5 hòa, 0 Đen thắng. Trả về rating trước/sau.
+  applyRatedGame(userW, userB, scoreW, pool, now = Date.now()) {
+    const before = { w: this.getRating(userW, pool), b: this.getRating(userB, pool) };
+    const [w, b] = rateGame(before.w, before.b, scoreW, now);
+    userW.ratings = { ...userW.ratings, [pool]: w };
+    userB.ratings = { ...userB.ratings, [pool]: b };
+    this.saveSoon();
+    const change = (old, next) => ({
+      before: Math.round(old.rating),
+      after: Math.round(next.rating),
+      provisional: next.rd > PROVISIONAL_RD,
+    });
+    return { pool, w: change(before.w, w), b: change(before.b, b) };
+  }
+
+  // ----- EXP: cộng dồn, không giảm; nguồn từ Bot có trần mỗi ngày -----
+  addXp(user, amount, { source = 'online', dailyCap = Infinity } = {}) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (user.xpDaily?.date !== today) user.xpDaily = { date: today };
+    const used = user.xpDaily[source] ?? 0;
+    const gained = Math.max(0, Math.min(amount, dailyCap - used));
+    user.xpDaily[source] = used + gained;
+    const before = levelFromXp(user.xp ?? 0).level;
+    user.xp = (user.xp ?? 0) + gained;
+    this.saveSoon();
+    const level = levelFromXp(user.xp);
+    return { gained, total: user.xp, ...level, levelUp: level.level > before, capped: gained < amount };
+  }
+
+  // Bảng xếp hạng: xếp theo cận dưới (rating − 2·RD) để người mới may mắn không vượt lên đầu.
+  leaderboard(pool, limit = 50) {
+    return Object.values(this.data.users)
+      .filter((u) => u.ratings?.[pool]?.games > 0)
+      .map((u) => ({ user: u, r: u.ratings[pool] }))
+      .sort((a, b) => b.r.rating - 2 * b.r.rd - (a.r.rating - 2 * a.r.rd))
+      .slice(0, limit)
+      .map(({ user, r }) => ({
+        name: user.name,
+        rating: Math.round(r.rating),
+        games: r.games,
+        provisional: r.rd > PROVISIONAL_RD,
+      }));
   }
 
   recordOnline(userId, result) {

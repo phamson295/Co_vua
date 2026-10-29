@@ -1,8 +1,9 @@
 // Tài khoản phía trình duyệt: đăng nhập, đăng ký, chơi nhanh (tài khoản chỉ cần biệt danh), hồ sơ.
 // Người chơi không đăng nhập vẫn chơi bình thường với tư cách khách.
+import { POOLS } from './shared.js';
 
 const state = { user: null, providers: {} };
-let options = { onChange() {}, toast() {} };
+let options = { onChange() {}, toast() {}, onLeaderboard() {} };
 let dom = {};
 let tab = 'login';
 
@@ -103,7 +104,12 @@ function renderBanner() {
       ? h(
           'div',
           { class: 'banner-row' },
-          h('div', { class: 'banner-text' }, h('strong', {}, `Xin chào, ${user.name}!`), h('span', {}, 'Ván online của bạn được ghi vào thống kê.')),
+          h(
+            'div',
+            { class: 'banner-text' },
+            h('strong', {}, `Xin chào, ${user.name}!`),
+            xpLine(user.xp),
+          ),
           h('button', { class: 'btn', type: 'button', onclick: () => openAccount() }, 'Tài khoản'),
         )
       : h(
@@ -117,6 +123,19 @@ function renderBanner() {
           ),
           h('button', { class: 'btn primary', type: 'button', onclick: () => openAccount('login') }, 'Đăng nhập'),
         ),
+  );
+}
+
+// Thanh EXP: "Cấp 3 ▰▰▱▱ 120/187 EXP"
+function xpLine(xp) {
+  if (!xp) return null;
+  const percent = xp.need ? Math.round((xp.into / xp.need) * 100) : 100;
+  return h(
+    'span',
+    { class: 'xp-line' },
+    h('span', { class: 'level-badge' }, `Cấp ${xp.level}`),
+    h('span', { class: 'xp-bar' }, h('span', { style: `width:${percent}%` })),
+    h('span', { class: 'xp-num' }, xp.need ? `${xp.into}/${xp.need} EXP` : 'Cấp tối đa'),
   );
 }
 
@@ -235,6 +254,16 @@ function profileView() {
       h('span', { class: 'avatar big' }, initial(user.name)),
       h('div', {}, h('div', { class: 'profile-name' }, user.name), h('div', { class: 'hint' }, [KIND_LABEL[user.kind] ?? 'Tài khoản', user.email ? ` · ${user.email}` : ''])),
     ),
+    xpLine(user.xp),
+    h('div', { class: 'label' }, 'Rating online (Glicko-2)'),
+    h(
+      'div',
+      { class: 'stats three' },
+      Object.entries(POOLS).map(([pool, label]) => {
+        const r = user.ratings?.[pool] ?? { rating: 1500, provisional: true };
+        return stat(`${r.rating}${r.provisional ? '?' : ''}`, label);
+      }),
+    ),
     h('div', { class: 'label' }, 'Thống kê chơi online'),
     h('div', { class: 'stats' }, stat(stats.played, 'Ván'), stat(stats.wins, 'Thắng'), stat(stats.losses, 'Thua'), stat(stats.draws, 'Hòa')),
   ];
@@ -253,6 +282,18 @@ function profileView() {
   }
 
   nodes.push(
+    h(
+      'button',
+      {
+        class: 'btn block',
+        type: 'button',
+        onclick() {
+          dom.dialog.close();
+          options.onLeaderboard();
+        },
+      },
+      'Xem bảng xếp hạng',
+    ),
     h(
       'button',
       {
@@ -302,8 +343,8 @@ function handleLoginRedirect() {
   else options.toast(`Đăng nhập thành công${state.user ? `, xin chào ${state.user.name}!` : '.'}`);
 }
 
-export async function initAccount({ button, banner, dialog, onChange, toast }) {
-  options = { onChange, toast };
+export async function initAccount({ button, banner, dialog, onChange, toast, onLeaderboard }) {
+  options = { onChange, toast, onLeaderboard };
   dom = { button, banner, dialog, title: dialog.querySelector('#account-title'), body: dialog.querySelector('#account-body') };
   button.addEventListener('click', () => openAccount());
   dialog.querySelector('#account-close').addEventListener('click', () => dialog.close());

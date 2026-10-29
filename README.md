@@ -2,11 +2,28 @@
 
 Game cờ vua chạy trên trình duyệt, dùng được trên điện thoại và máy tính, với 3 chế độ:
 
-- **Hai người trên cùng một máy**: hai người chơi lần lượt trên một điện thoại. Bàn cờ tự xoay theo lượt để người ngồi đối diện nhìn đúng quân của mình (có thể tắt).
-- **Chơi với máy**: 12 cấp độ, từ "Mới tập" đến "Chuyên gia". Bạn chọn cầm quân Trắng, Đen hoặc ngẫu nhiên.
-- **Chơi online**: tạo phòng, gửi mã 5 ký tự cho bạn, bạn vào phòng bằng mã đó. Máy chủ kiểm tra từng nước đi.
+- **Chơi với máy**: 12 cấp độ, chọn cầm Trắng/Đen/ngẫu nhiên, có đồng hồ, **gợi ý nước đi**, hoàn tác (khi không tính giờ) và **Elo luyện tập** (lưu trên máy, kèm gợi ý cấp độ vừa sức).
+- **Hai người, một máy**: có đồng hồ thi đấu; bàn cờ tự xoay theo lượt để hai người ngồi đối diện (có thể tắt).
+- **Chơi online**: tạo phòng, mời bạn bè bằng liên kết hoặc mã 5 ký tự. Máy chủ kiểm tra từng nước đi và giữ đồng hồ. Có **xin hòa, tái đấu (đổi màu quân), chat nhanh**, **tự nối lại** khi mất mạng hoặc tải lại trang (giữ ván 60 giây; quá thời gian thì xử thua), và **xếp hạng Glicko-2** khi cả hai đã đăng nhập.
 
-Luật đầy đủ: nhập thành, bắt tốt qua đường, phong cấp, chiếu, chiếu hết, hết nước đi (hòa), lặp lại thế cờ 3 lần (hòa), luật 50 nước (hòa), không đủ quân để chiếu hết (hòa).
+Luật đầy đủ: nhập thành, bắt tốt qua đường, phong cấp, chiếu, chiếu hết, hết nước đi (hòa), lặp lại thế cờ 3 lần (hòa), luật 50 nước (hòa), không đủ quân để chiếu hết (hòa). Hết giờ thì thua, trừ khi bên còn lại không đủ quân để chiếu hết (khi đó hòa).
+
+**Thể thức thời gian:** Không giới hạn, 1 phút, 3+2, 5 phút, 10 phút, 15+10, 30 phút (số sau dấu `+` là giây cộng thêm sau mỗi nước).
+
+**Trong ván:** đồng hồ hai bên, rating, quân đã ăn và chênh lệch quân, danh sách nước đi theo ký hiệu chuẩn (`Nf3`, `O-O`, `Qh4#`), **xem lại từng nước** (nút ◀ ▶ hoặc phím mũi tên), lật bàn, sao chép PGN. Ván với máy và ván hai người được **lưu tự động**, đóng trang rồi mở lại vẫn chơi tiếp được từ menu.
+
+## Điểm số và xếp hạng
+
+Hiện thực hóa một phần [tài liệu thiết kế](docs/he-thong-xep-hang-va-diem-so.md):
+
+| Hệ thống | Áp dụng | Cách tính |
+|---|---|---|
+| Rating Glicko-2 | Ván online, cả hai đã đăng nhập, phòng bật "Tính điểm" | Ba nhóm theo thời gian: Siêu chớp (dưới 3 phút ước tính), Cờ chớp (dưới 8 phút), Cờ nhanh. Khởi điểm 1500, dấu `?` khi chưa đủ ván. RD tăng dần khi nghỉ chơi |
+| Bảng xếp hạng | Từng nhóm thời gian | Xếp theo `rating − 2·RD` để người mới may mắn không vượt lên đầu |
+| EXP và cấp độ | Người có tài khoản | Ván online: 20 + thắng 20 / hòa 10. Ván với máy: (10 + thắng 20 / hòa 10) × hệ số theo cấp máy, tối đa 300 EXP/ngày. Ván dưới 6 nước mỗi bên không được EXP. Cấp `L` cần `100·L^0,9` EXP, tối đa cấp 50 |
+| Elo luyện tập | Ván với máy, lưu trên máy người chơi | Elo một phía với Elo nội bộ của máy (cấp `n` ≈ `600 + 125·(n−1)`). Ván có dùng gợi ý hoặc hoàn tác không được tính |
+
+Ván online bị bỏ trước khi cả hai bên đi nước nào thì không tính điểm. Người bỏ ván giữa chừng bị xử thua và không được EXP.
 
 ## Giao diện
 
@@ -17,8 +34,6 @@ Mở **Giao diện** (biểu tượng bánh răng ở góc trên, hoặc trong m
 - **2D / 3D**: 2D phẳng có hoạt ảnh trượt quân. 3D là bàn cờ dựng thật bằng Three.js, có chất liệu, bóng đổ, kéo để xoay góc nhìn, chụm hai ngón để phóng to thu nhỏ, và nút "Đặt lại góc nhìn". Kiểu quân Cổ điển/Hiện đại cũng áp dụng cho quân 3D.
 - **Màu giao diện**: Tự động theo hệ thống, Sáng, Tối.
 - Âm thanh, gợi ý ô có thể đi, tọa độ trên bàn 2D, xoay bàn theo lượt (hai người).
-
-Trong ván có thanh người chơi (quân bị ăn, chênh lệch quân), danh sách nước đi theo ký hiệu chuẩn (`Nf3`, `O-O`, `Qh4#`), nút sao chép PGN, và hộp thoại kết quả khi kết thúc ván. Chơi online có liên kết mời bạn vào phòng (`?room=MÃ`).
 
 ## Tài khoản
 
@@ -31,7 +46,7 @@ Không bắt buộc đăng nhập: khách vẫn chơi được mọi chế độ
 | **Email** | Tên hiển thị, email, mật khẩu (từ 8 ký tự) | Mật khẩu băm bằng scrypt |
 | **Google / Facebook** | Quản trị viên cấu hình khóa OAuth | Nút tự bật khi có đủ khóa |
 
-Người đã đăng nhập dùng tên của mình khi chơi online (đối thủ thấy tên đó) và ván online được ghi vào thống kê (ván, thắng, thua, hòa). Bỏ cuộc giữa chừng bằng cách thoát phòng hiện chưa bị tính thua.
+Người đã đăng nhập dùng tên của mình khi chơi online (đối thủ thấy tên đó), có rating, EXP, cấp độ và thống kê (ván, thắng, thua, hòa) trong hồ sơ.
 
 ### Cấu hình đăng nhập mạng xã hội
 
@@ -91,17 +106,20 @@ npm test
 ## Cấu trúc
 
 ```
-server.js                  Máy chủ: phục vụ giao diện, API tài khoản (/api), ghép phòng và chuyển nước đi (WebSocket /ws)
+server.js                  Máy chủ: phục vụ giao diện, API (/api) và WebSocket (/ws)
 server/
-  auth.js                  Đăng ký, đăng nhập, tài khoản nhanh, OAuth, phiên đăng nhập
-  store.js                 Lưu người dùng vào file JSON
+  auth.js                  Đăng ký, đăng nhập, tài khoản nhanh, OAuth, phiên đăng nhập, bảng xếp hạng, EXP
+  game-server.js           Phòng online: đồng hồ, xin hòa, tái đấu, chat nhanh, nối lại, rating và EXP khi hết ván
+  store.js                 Lưu người dùng, rating, EXP vào file JSON
 public/
   index.html               Giao diện
   css/style.css
   js/engine.js             Luật cờ, ký hiệu SAN/PGN (dùng chung cho trình duyệt và máy chủ)
+  js/shared.js             Thể thức thời gian, đồng hồ, câu chat nhanh (dùng chung)
+  js/rating.js             Glicko-2, Elo luyện tập, EXP và cấp độ (dùng chung)
   js/ai.js                 Máy chơi: alpha-beta, quiescence, 12 cấp độ
   js/ai-worker.js          Chạy việc tính nước của máy ở luồng riêng (không làm đơ giao diện)
-  js/app.js                Điều khiển giao diện, thiết lập, âm thanh, hộp thoại
+  js/app.js                Điều khiển giao diện: ván cờ, đồng hồ, xem lại, gợi ý, lưu ván, online
   js/pieces.js             Quân cờ vector (SVG) cho bàn 2D
   js/board3d.js            Bàn cờ 3D bằng Three.js (chỉ nạp khi chọn 3D)
   js/sound.js              Âm thanh tạo bằng Web Audio
@@ -111,6 +129,8 @@ tests/
   engine.test.js           Kiểm thử luật bằng perft (đếm nước đi chuẩn), ký hiệu SAN và các trường hợp kết thúc ván
   ai.test.js               Kiểm thử máy: nước hợp lệ, chiếu hết, thời gian suy nghĩ
   auth.test.js             Kiểm thử tài khoản, OAuth (máy chủ giả lập), tên người chơi và thống kê online
+  online.test.js           Kiểm thử online: đồng hồ, hết giờ, xin hòa, tái đấu, nối lại, bỏ ván, xếp hạng, EXP, chat
+  shared.test.js           Kiểm thử đồng hồ, Glicko-2, Elo luyện tập, EXP
 ```
 
 ## Các cấp độ máy
@@ -137,8 +157,9 @@ Gói miễn phí của Render sẽ tạm ngủ sau một thời gian không có 
 
 ## Giới hạn hiện tại
 
-- Chơi online: không có tính năng nối lại khi tải lại trang hoặc mất mạng. Ván đang chơi sẽ kết thúc nếu một bên rời đi.
-- Máy chủ giữ phòng trong bộ nhớ, nên khởi động lại máy chủ sẽ mất hết phòng đang chờ và ván đang chơi.
-- Chưa có chức năng đề nghị hòa, chat, đồng hồ đếm giờ hay lưu ván.
+- Máy chủ giữ phòng trong bộ nhớ, nên khởi động lại máy chủ (kể cả khi Render deploy lại) sẽ mất các ván online đang diễn ra.
+- Chưa có ghép trận ngẫu nhiên theo rating (hiện chỉ chơi bằng phòng mời), chưa có giải đấu, thành tựu và giải đố trong tài liệu thiết kế.
+- Chat chỉ có câu soạn sẵn (không gõ tự do), để không phải kiểm duyệt nội dung.
+- Elo luyện tập lưu trên từng thiết bị, chưa đồng bộ giữa các máy.
 - Chế độ 3D cần trình duyệt hỗ trợ WebGL; nếu không, ứng dụng tự quay về 2D. Quân 3D là hình khối dựng bằng hình học, chưa phải mô hình chạm khắc chi tiết.
-- Chưa kiểm thử trên nhiều loại điện thoại; hiệu năng 3D phụ thuộc cấu hình máy.
+- Chưa kiểm thử trên nhiều loại điện thoại thật; hiệu năng 3D phụ thuộc cấu hình máy.

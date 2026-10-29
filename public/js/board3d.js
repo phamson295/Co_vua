@@ -345,6 +345,7 @@ export function createBoard3D(container, { onSquare }) {
     target: new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }),
     capture: new THREE.MeshBasicMaterial({ color: 0xd04040, transparent: true, opacity: 0.75, depthWrite: false }),
     check: new THREE.MeshBasicMaterial({ map: radialTexture(), transparent: true, depthWrite: false }),
+    hint: new THREE.MeshBasicMaterial({ color: 0x3b9eff, transparent: true, opacity: 0.5, depthWrite: false }),
   };
   const planeGeo = new THREE.PlaneGeometry(0.98, 0.98);
   const dotGeo = new THREE.CircleGeometry(0.17, 24);
@@ -541,6 +542,10 @@ export function createBoard3D(container, { onSquare }) {
     if (vm.last) {
       flat(planeGeo, overlayMats.last, vm.last.from, 0.006);
       flat(planeGeo, overlayMats.last, vm.last.to, 0.006);
+    }
+    if (vm.hint) {
+      flat(planeGeo, overlayMats.hint, vm.hint.from, 0.007);
+      flat(planeGeo, overlayMats.hint, vm.hint.to, 0.007);
     }
     if (vm.selected !== null) flat(planeGeo, overlayMats.selected, vm.selected, 0.008);
     if (vm.kingSquare >= 0) flat(planeGeo, overlayMats.check, vm.kingSquare, 0.01);
