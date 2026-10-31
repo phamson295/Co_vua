@@ -3,7 +3,7 @@
 Game cờ vua chạy trên trình duyệt, dùng được trên điện thoại và máy tính, với 3 chế độ:
 
 - **Chơi với máy**: 12 cấp độ, chọn cầm Trắng/Đen/ngẫu nhiên, có đồng hồ, **gợi ý nước đi**, hoàn tác (khi không tính giờ) và **Elo luyện tập** (lưu trên máy, kèm gợi ý cấp độ vừa sức).
-- **Hai người, một máy**: có đồng hồ thi đấu; bàn cờ tự xoay theo lượt để hai người ngồi đối diện (có thể tắt).
+- **Hai người, một máy**: có đồng hồ thi đấu. Chọn cách ngồi: **Đối diện** (mặc định: bàn cờ đứng yên, quân Đen cùng thanh tên và đồng hồ bên Đen quay ngược về phía người cầm Đen), **Xoay bàn theo lượt**, hoặc **Cùng một phía**.
 - **Chơi online**: tạo phòng, mời bạn bè bằng liên kết hoặc mã 5 ký tự. Máy chủ kiểm tra từng nước đi và giữ đồng hồ. Có **xin hòa, tái đấu (đổi màu quân), chat nhanh**, **tự nối lại** khi mất mạng hoặc tải lại trang (giữ ván 60 giây; quá thời gian thì xử thua), và **xếp hạng Glicko-2** khi cả hai đã đăng nhập.
 
 Luật đầy đủ: nhập thành, bắt tốt qua đường, phong cấp, chiếu, chiếu hết, hết nước đi (hòa), lặp lại thế cờ 3 lần (hòa), luật 50 nước (hòa), không đủ quân để chiếu hết (hòa). Hết giờ thì thua, trừ khi bên còn lại không đủ quân để chiếu hết (khi đó hòa).
@@ -33,7 +33,7 @@ Mở **Giao diện** (biểu tượng bánh răng ở góc trên, hoặc trong m
 - **Bàn cờ**: Gỗ, Xanh lá, Xanh dương, Đá cẩm thạch, Ban đêm.
 - **2D / 3D**: 2D phẳng có hoạt ảnh trượt quân. 3D là bàn cờ dựng thật bằng Three.js, có chất liệu, bóng đổ, kéo để xoay góc nhìn, chụm hai ngón để phóng to thu nhỏ, và nút "Đặt lại góc nhìn". Kiểu quân Cổ điển/Hiện đại cũng áp dụng cho quân 3D.
 - **Màu giao diện**: Tự động theo hệ thống, Sáng, Tối.
-- Âm thanh, gợi ý ô có thể đi, tọa độ trên bàn 2D, xoay bàn theo lượt (hai người).
+- Âm thanh, gợi ý ô có thể đi, tọa độ trên bàn 2D, cách ngồi khi chơi hai người.
 
 ## Tài khoản
 

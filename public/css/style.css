@@ -518,6 +518,8 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 28px; }
 }
 .board.flipped { transform: rotate(180deg); }
 .board.flipped.upright .pc { rotate: 180deg; }
+.board.facing .pc[data-color="b"] { rotate: 180deg; }
+.player.facing { rotate: 180deg; }
 .board.theme-wood { --light-sq: #f0d9b5; --dark-sq: #b58863; --frame: #5b3a1e; }
 .board.theme-green { --light-sq: #eeeed2; --dark-sq: #769656; --frame: #3f5a2a; }
 .board.theme-blue { --light-sq: #dee3e6; --dark-sq: #8ca2ad; --frame: #3d5566; }

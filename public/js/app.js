@@ -47,7 +47,12 @@ const THEME_OPTIONS = [
   { value: 'light', label: 'Sáng' },
   { value: 'dark', label: 'Tối' },
 ];
-const CHOICES = { pieces: PIECE_OPTIONS, board: BOARD_OPTIONS, view: VIEW_OPTIONS, theme: THEME_OPTIONS };
+const SEATING_OPTIONS = [
+  { value: 'facing', label: 'Đối diện' },
+  { value: 'rotate', label: 'Xoay bàn theo lượt' },
+  { value: 'same', label: 'Cùng một phía' },
+];
+const CHOICES = { pieces: PIECE_OPTIONS, board: BOARD_OPTIONS, view: VIEW_OPTIONS, theme: THEME_OPTIONS, seating: SEATING_OPTIONS };
 const DEFAULT_SETTINGS = {
   pieces: 'classic',
   board: 'wood',
@@ -56,7 +61,7 @@ const DEFAULT_SETTINGS = {
   sound: true,
   hints: true,
   coords: true,
-  rotate: true,
+  seating: 'facing', // hai người: 'facing' đối diện | 'rotate' xoay bàn theo lượt | 'same' cùng một phía
 };
 const SETTINGS_KEY = 'co-vua-settings';
 const PREFS_KEY = 'co-vua-prefs'; // lựa chọn gần nhất ở các màn hình thiết lập
@@ -95,7 +100,6 @@ const els = {
   onlineMsg: $('#online-msg'),
   onlineRated: $('#online-rated'),
   ratedHint: $('#rated-hint'),
-  localRotate: $('#local-rotate'),
   resumeCard: $('#resume-card'),
   resumeDesc: $('#resume-desc'),
   settingsDialog: $('#settings-dialog'),
@@ -222,8 +226,10 @@ function applySettings() {
       .querySelectorAll('[role="radio"]')
       .forEach((btn) => btn.setAttribute('aria-checked', String(btn.dataset.value === settings[key])));
   }
-  for (const key of ['sound', 'hints', 'coords', 'rotate']) $(`#opt-${key}`).checked = settings[key];
-  els.localRotate.checked = settings.rotate;
+  for (const key of ['sound', 'hints', 'coords']) $(`#opt-${key}`).checked = settings[key];
+  $('#local-seating')
+    .querySelectorAll('[role="radio"]')
+    .forEach((btn) => btn.setAttribute('aria-checked', String(btn.dataset.value === settings.seating)));
   applyView();
   if (settings.view === '3d') ensure3D();
 }
@@ -288,7 +294,9 @@ buildChoices('pieces', $('#opt-pieces'), true);
 buildChoices('board', $('#opt-board'), true);
 buildChoices('view', $('#opt-view'), false);
 buildChoices('theme', $('#opt-theme'), false);
-for (const key of ['sound', 'hints', 'coords', 'rotate']) {
+buildChoices('seating', $('#opt-seating'), false);
+buildChoices('seating', $('#local-seating'), false);
+for (const key of ['sound', 'hints', 'coords']) {
   $(`#opt-${key}`).addEventListener('change', (e) => setSetting(key, e.target.checked));
 }
 
@@ -349,11 +357,13 @@ function paintPiece(el, piece) {
   el.dataset.key = key;
   el.textContent = '';
   el.removeAttribute('data-letter');
+  el.removeAttribute('data-color');
   if (!piece) {
     el.className = 'pc';
     return;
   }
   const colorClass = piece[0] === 'w' ? 'pw' : 'pb';
+  el.dataset.color = piece[0];
   if (settings.pieces === 'glyph') {
     el.className = `pc pk-glyph ${colorClass}`;
     el.textContent = GLYPH[piece[1]];
@@ -370,6 +380,8 @@ function render2d(vm) {
   els.board.classList.toggle('flipped', vm.view === 'b');
   // Chỉ chế độ hai người ngồi đối diện mới xoay cả quân; còn lại quân luôn đứng thẳng khi lật bàn.
   els.board.classList.toggle('upright', vm.upright);
+  // Ngồi đối diện: bàn đứng yên, quân Đen quay về phía người cầm Đen.
+  els.board.classList.toggle('facing', vm.facing);
   const rankCol = vm.view === 'w' ? 0 : 7;
   const fileRow = vm.view === 'w' ? 7 : 0;
   squares.forEach((sq, i) => {
@@ -395,7 +407,9 @@ function animateMove2d(move) {
   // Bàn xoay 180° đảo chiều dịch chuyển; quân được xoay ngược lại (upright) thì đảo thêm lần nữa.
   const isFlipped = els.board.classList.contains('flipped');
   const isUpright = isFlipped && els.board.classList.contains('upright');
-  const sign = isFlipped && !isUpright ? -1 : 1;
+  // Quân Đen đang quay ngược (ngồi đối diện) cũng làm đảo chiều dịch chuyển.
+  const facingBlack = els.board.classList.contains('facing') && move.piece[0] === 'b';
+  const sign = (isFlipped && !isUpright ? -1 : 1) * (facingBlack ? -1 : 1);
   for (const [from, to] of pairs) {
     const a = squares[from].getBoundingClientRect();
     const b = squares[to].getBoundingClientRect();
@@ -420,7 +434,7 @@ function viewColor() {
   let color;
   if (mode === 'ai') color = humanColor;
   else if (mode === 'online') color = myColor;
-  else color = settings.rotate && viewPly === null ? game.turn : 'w';
+  else color = settings.seating === 'rotate' && viewPly === null ? game.turn : 'w';
   return flipped ? opponent(color) : color;
 }
 
@@ -648,7 +662,8 @@ function render({ move = null } = {}) {
     kingSquare: check ? state.board.indexOf(state.turn + 'K') : -1,
     hint: live ? hintMove : null,
     view,
-    upright: !(mode === 'local' && settings.rotate) || flipped,
+    upright: !(mode === 'local' && settings.seating === 'rotate') || flipped,
+    facing: mode === 'local' && settings.seating === 'facing' && !flipped,
   };
 
   if (use3D()) {
@@ -667,6 +682,8 @@ function render({ move = null } = {}) {
   lastView = view;
 
   barColors = { top: opponent(view), bottom: view };
+  // Ngồi đối diện: thanh tên và đồng hồ phía trên cũng quay ngược cho người ngồi bên kia đọc.
+  els.playerTop.classList.toggle('facing', vm.facing);
   renderPlayer(els.playerTop, barColors.top, end, ply);
   renderPlayer(els.playerBottom, barColors.bottom, end, ply);
   renderClocks();
@@ -1433,7 +1450,6 @@ $('#btn-online').addEventListener('click', () => {
 });
 $('#ai-start').addEventListener('click', startAI);
 $('#local-start').addEventListener('click', () => startGame('local', { tc: prefs.localTc }));
-els.localRotate.addEventListener('change', (e) => setSetting('rotate', e.target.checked));
 els.onlineRated.addEventListener('change', (e) => {
   prefs.onlineRated = e.target.checked;
   savePrefs();

@@ -77,7 +77,7 @@
             <span class="mode-icon" data-icon="wQ"></span>
             <span class="mode-text">
               <span class="mode-title">Hai người, một máy</span>
-              <span class="mode-desc">Có đồng hồ, bàn cờ tự xoay theo lượt</span>
+              <span class="mode-desc">Có đồng hồ, quân Đen quay về phía người ngồi đối diện</span>
             </span>
           </button>
           <button id="btn-online" class="mode-card">
@@ -132,7 +132,11 @@
           <span class="label">Thời gian mỗi bên</span>
           <div id="local-tc" class="tc-grid" role="radiogroup" aria-label="Thời gian mỗi bên"></div>
         </div>
-        <label class="switch"><input id="local-rotate" type="checkbox"><span class="track"></span>Xoay bàn cờ theo lượt (ngồi đối diện)</label>
+        <div class="group">
+          <span class="label">Cách ngồi</span>
+          <div id="local-seating" class="segmented" role="radiogroup" aria-label="Cách ngồi"></div>
+          <p class="hint">Đối diện: bàn cờ đứng yên, quân Đen quay về phía người cầm Đen. Xoay bàn theo lượt: cả bàn cờ xoay về phía người đến lượt.</p>
+        </div>
         <div class="actions">
           <button id="local-start" class="btn primary">Bắt đầu</button>
           <button class="btn" data-home>Quay lại</button>
@@ -276,11 +280,15 @@
         <span class="label">Màu giao diện</span>
         <div id="opt-theme" class="segmented" role="radiogroup" aria-label="Màu giao diện"></div>
       </div>
+      <div class="group">
+        <span class="label">Hai người, một máy: cách ngồi</span>
+        <div id="opt-seating" class="segmented" role="radiogroup" aria-label="Cách ngồi khi chơi hai người"></div>
+      </div>
       <div class="group switches">
         <label class="switch"><input id="opt-sound" type="checkbox"><span class="track"></span>Âm thanh</label>
         <label class="switch"><input id="opt-hints" type="checkbox"><span class="track"></span>Gợi ý các ô có thể đi</label>
         <label class="switch"><input id="opt-coords" type="checkbox"><span class="track"></span>Hiện tọa độ trên bàn cờ 2D</label>
-        <label class="switch"><input id="opt-rotate" type="checkbox"><span class="track"></span>Hai người: xoay bàn cờ theo lượt</label>
+
       </div>
     </div>
   </dialog>
