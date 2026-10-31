@@ -151,12 +151,11 @@ export function attachGameServer({ server, auth, store, clockScale = 1, graceMs 
   }
 
   // ----- Các lệnh từ người chơi -----
-  function createRoom(ws, msg) {
-    if (ws.room) return send(ws, { type: 'error', message: 'Bạn đang ở trong một phòng khác.' });
+  function newRoom(ws, tc, rated) {
     const room = {
       code: newCode(),
-      tc: findTimeControl(String(msg.tc ?? 'none')),
-      rated: msg.rated !== false,
+      tc,
+      rated,
       players: { w: makeSlot(ws), b: null },
       game: null,
       status: 'waiting',
@@ -168,8 +167,58 @@ export function attachGameServer({ server, auth, store, clockScale = 1, graceMs 
     };
     rooms.set(room.code, room);
     attach(ws, room, 'w');
+    return room;
+  }
+
+  function createRoom(ws, msg) {
+    if (ws.room) return send(ws, { type: 'error', message: 'Bạn đang ở trong một phòng khác.' });
+    cancelSeek(ws);
+    const room = newRoom(ws, findTimeControl(String(msg.tc ?? 'none')), msg.rated !== false);
     send(ws, { type: 'room', token: room.players.w.token, ...roomInfo(room), rated: room.rated });
   }
+
+  // ----- Ghép trận ngẫu nhiên: cùng thể thức, rating gần nhau; chờ càng lâu thì khoảng chênh càng rộng -----
+  const queue = []; // { ws, tc, rating, since }
+  const searchWindow = (entry, now) => Math.min(500, 100 + (20 * (now - entry.since)) / 1000);
+
+  function seek(ws, msg) {
+    if (ws.room) return send(ws, { type: 'error', message: 'Bạn đang ở trong một phòng khác.' });
+    cancelSeek(ws);
+    const tc = findTimeControl(String(msg.tc ?? '5+0'));
+    const user = ws.user ? store.getUser(ws.user.id) : null;
+    const rating = user ? Math.round(store.getRating(user, poolOf(tc)).rating) : 1500;
+    queue.push({ ws, tc, rating, since: Date.now() });
+    const waiting = queue.filter((e) => e.tc.id === tc.id).length;
+    send(ws, { type: 'seeking', tc: { id: tc.id, label: tc.label, short: tc.short }, rating, waiting });
+    matchQueue();
+  }
+
+  function cancelSeek(ws) {
+    for (let i = queue.length - 1; i >= 0; i--) if (queue[i].ws === ws) queue.splice(i, 1);
+  }
+
+  function matchQueue() {
+    const now = Date.now();
+    for (let i = 0; i < queue.length; i++) {
+      for (let j = i + 1; j < queue.length; j++) {
+        const a = queue[i];
+        const b = queue[j];
+        if (a.tc.id !== b.tc.id) continue;
+        if (a.ws.user && b.ws.user && a.ws.user.id === b.ws.user.id) continue; // không tự ghép với chính mình
+        if (Math.abs(a.rating - b.rating) > Math.max(searchWindow(a, now), searchWindow(b, now))) continue;
+        queue.splice(j, 1);
+        queue.splice(i, 1);
+        const [white, black] = Math.random() < 0.5 ? [a, b] : [b, a];
+        const room = newRoom(white.ws, a.tc, true);
+        room.players.b = makeSlot(black.ws);
+        attach(black.ws, room, 'b');
+        startGame(room);
+        return matchQueue();
+      }
+    }
+  }
+  const matchTimer = setInterval(matchQueue, 2000);
+  matchTimer.unref();
 
   function joinRoom(ws, code) {
     const room = rooms.get(code);
@@ -322,6 +371,10 @@ export function attachGameServer({ server, auth, store, clockScale = 1, graceMs 
       }
       switch (msg.type) {
         case 'create': return createRoom(ws, msg);
+        case 'seek': return seek(ws, msg);
+        case 'cancel_seek':
+          cancelSeek(ws);
+          return send(ws, { type: 'seek_cancelled' });
         case 'join': return joinRoom(ws, String(msg.code ?? '').trim().toUpperCase());
         case 'rejoin': return rejoin(ws, String(msg.code ?? '').trim().toUpperCase(), String(msg.token ?? ''));
         case 'move': return playMove(ws, msg);
@@ -335,12 +388,16 @@ export function attachGameServer({ server, auth, store, clockScale = 1, graceMs 
         default: return send(ws, { type: 'error', message: 'Lệnh không hợp lệ.' });
       }
     });
-    ws.on('close', () => leave(ws, { immediate: false }));
+    ws.on('close', () => {
+      cancelSeek(ws);
+      leave(ws, { immediate: false });
+    });
   });
 
   return {
     rooms,
     close() {
+      clearInterval(matchTimer);
       for (const room of rooms.values()) deleteRoom(room);
       for (const client of wss.clients) client.terminate();
       wss.close();

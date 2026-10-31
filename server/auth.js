@@ -5,6 +5,9 @@ import crypto from 'node:crypto';
 import { promisify } from 'node:util';
 import { POOLS } from '../public/js/shared.js';
 import { PROVISIONAL_RD, levelFromXp, botXp, BOT_XP_DAILY_CAP } from '../public/js/rating.js';
+import { DEFAULT_PUZZLE_RATING } from '../public/js/puzzle-core.js';
+import { ACHIEVEMENT_IDS } from '../public/js/achievements.js';
+import fs from 'node:fs';
 
 const scrypt = promisify(crypto.scrypt);
 
@@ -93,6 +96,8 @@ export function publicUser(user) {
     stats: user.stats,
     ratings,
     xp: { total: user.xp ?? 0, ...levelFromXp(user.xp ?? 0) },
+    puzzle: { ...DEFAULT_PUZZLE_RATING, ...user.puzzle },
+    achievements: user.achievements ?? {},
     createdAt: user.createdAt,
   };
 }
@@ -134,7 +139,21 @@ async function readJson(req) {
   }
 }
 
+const PUZZLE_XP = 5;
+const PUZZLE_XP_DAILY_CAP = 100;
+
+// Độ khó của từng bài giải đố (để máy chủ tự tính Puzzle Rating, không tin số liệu từ trình duyệt).
+function loadPuzzleRatings() {
+  try {
+    const file = new URL('../public/data/puzzles.json', import.meta.url);
+    return new Map(JSON.parse(fs.readFileSync(file, 'utf8')).map((p) => [p.id, p.rating]));
+  } catch {
+    return new Map();
+  }
+}
+
 export function createAuth({ store, env = process.env }) {
+  const puzzleRatings = loadPuzzleRatings();
   const secret = env.SESSION_SECRET || store.secret();
   const trustProxy = Boolean(env.TRUST_PROXY || env.RENDER);
   const attempts = new Map();
@@ -294,6 +313,45 @@ export function createAuth({ store, env = process.env }) {
     json(res, 200, { xp });
   }
 
+  async function puzzleProgress(req, res) {
+    const user = userFromRequest(req);
+    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.');
+    if (limited(`puzzle:${user.id}`, 240, 3600 * 1000)) throw new HttpError(429, 'Gửi kết quả quá nhanh, hãy thử lại sau.');
+    const body = await readJson(req);
+    const rating = puzzleRatings.get(String(body.id));
+    if (rating === undefined) throw new HttpError(400, 'Bài giải đố không tồn tại.');
+    const solved = body.solved === true;
+    const puzzle = store.recordPuzzle(user, rating, solved);
+    const xp = solved ? store.addXp(user, PUZZLE_XP, { source: 'puzzle', dailyCap: PUZZLE_XP_DAILY_CAP }) : null;
+    json(res, 200, { puzzle, xp });
+  }
+
+  async function syncAchievements(req, res) {
+    const user = userFromRequest(req);
+    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.');
+    const body = await readJson(req);
+    const unlocked = Object.fromEntries(Object.entries(body.unlocked ?? {}).filter(([id]) => ACHIEVEMENT_IDS.has(id)));
+    json(res, 200, { achievements: store.mergeAchievements(user, unlocked) });
+  }
+
+  async function renameAccount(req, res) {
+    const user = userFromRequest(req);
+    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.');
+    const body = await readJson(req);
+    store.rename(user, cleanName(body.name));
+    json(res, 200, { user: publicUser(user) });
+  }
+
+  async function deleteAccount(req, res) {
+    const user = userFromRequest(req);
+    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.');
+    const body = await readJson(req);
+    if (body.confirm !== 'XÓA') throw new HttpError(400, 'Hãy gõ chữ XÓA để xác nhận.');
+    store.deleteUser(user);
+    addCookie(res, cookie(req, SESSION_COOKIE, '', 0));
+    json(res, 200, { ok: true });
+  }
+
   function leaderboard(res, url) {
     const pool = url.searchParams.get('pool');
     if (!POOLS[pool]) throw new HttpError(400, 'Nhóm xếp hạng không hợp lệ.');
@@ -400,6 +458,10 @@ export function createAuth({ store, env = process.env }) {
         case 'POST /api/auth/logout': return logout(req, res);
         case 'POST /api/progress/bot': return await botProgress(req, res);
         case 'GET /api/leaderboard': return leaderboard(res, url);
+        case 'POST /api/progress/puzzle': return await puzzleProgress(req, res);
+        case 'POST /api/achievements': return await syncAchievements(req, res);
+        case 'POST /api/account/name': return await renameAccount(req, res);
+        case 'POST /api/account/delete': return await deleteAccount(req, res);
         default: return json(res, 404, { error: 'Không tìm thấy.' });
       }
     } catch (error) {

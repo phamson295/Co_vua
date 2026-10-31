@@ -1,12 +1,14 @@
 // Giao diện và điều khiển: chơi với máy, hai người một máy, chơi online; bàn cờ 2D và 3D;
 // đồng hồ, xem lại nước đi, gợi ý, lưu ván, Elo luyện tập, xếp hạng và EXP.
-import { Game, opponent, isInCheck } from './engine.js';
+import { Game, opponent, isInCheck, applyMove, legalMoves, toUci } from './engine.js';
 import { LEVELS } from './ai.js';
 import { pieceSvg } from './pieces.js';
 import { play as playSound, setSoundEnabled } from './sound.js';
 import { initAccount, getUser, refreshAccount } from './account.js';
 import { TIME_CONTROLS, findTimeControl, formatClock, Clock, hasMatingMaterial, CHAT_PHRASES, POOLS } from './shared.js';
 import { botElo, DEFAULT_BOT_RATING, updateBotRating, suggestedBotLevel } from './rating.js';
+import { PUZZLE_TYPES, isCheckmate, mateMoves, forcesMateIn2, DEFAULT_PUZZLE_RATING, updatePuzzleRating, pickPuzzle } from './puzzle-core.js';
+import { ACHIEVEMENTS, evaluate as evaluateAchievements, achievementPoints } from './achievements.js';
 
 const GLYPH = { K: '♚', Q: '♛', R: '♜', B: '♝', N: '♞', P: '♟' };
 const PIECE_NAME = { Q: 'Hậu', R: 'Xe', B: 'Tượng', N: 'Mã' };
@@ -114,11 +116,14 @@ const els = {
   resultNew: $('#result-new'),
   resultRematch: $('#result-rematch'),
   toast: $('#toast'),
+  achievementsDialog: $('#achievements-dialog'),
+  seekBox: $('#seek-box'),
+  seekText: $('#seek-text'),
 };
 
 // ---------- Trạng thái ----------
 let game = new Game();
-let mode = null; // 'local' | 'ai' | 'online'
+let mode = null; // 'local' | 'ai' | 'online' | 'puzzle'
 let tcId = 'none';
 let clock = null; // đồng hồ (null khi không giới hạn thời gian)
 let humanColor = 'w';
@@ -155,6 +160,13 @@ let offer = null; // 'draw_received' | 'draw_sent' | 'rematch_received' | 'remat
 let opponentAwayUntil = 0; // thời điểm hết hạn chờ đối thủ mất kết nối (0 = đang kết nối)
 let opponentGone = false;
 let lastOver = null; // thông báo kết thúc ván từ máy chủ (có rating, EXP)
+let seekTimer = 0;
+let seekStarted = 0;
+
+// Giải đố
+let puzzle = null; // { data, playerColor, status: 'playing' | 'solved' | 'failed' | 'reviewed', reported }
+let puzzleList = null;
+let puzzleRatingChange = null;
 const bubbleTimers = {};
 
 const aiWorker = new Worker('js/ai-worker.js', { type: 'module' });
@@ -434,6 +446,7 @@ function viewColor() {
   let color;
   if (mode === 'ai') color = humanColor;
   else if (mode === 'online') color = myColor;
+  else if (mode === 'puzzle') color = puzzle.playerColor;
   else color = settings.seating === 'rotate' && viewPly === null ? game.turn : 'w';
   return flipped ? opponent(color) : color;
 }
@@ -477,6 +490,7 @@ function describeEnd(end) {
 }
 
 function statusText(end, check) {
+  if (mode === 'puzzle') return puzzleStatusText();
   if (end.over) {
     const d = describeEnd(end);
     return `${d.title} · ${d.text}`;
@@ -496,6 +510,12 @@ function statusText(end, check) {
 }
 
 function playerInfo(color) {
+  if (mode === 'puzzle') {
+    if (color === puzzle.playerColor) {
+      return { name: getUser()?.name ?? 'Bạn', rating: `Puzzle ${Math.round(puzzleProgress().rating)}`, sub: `Bạn · quân ${COLOR_NAME[color]}` };
+    }
+    return { name: `Bài ${puzzle.data.id.replace('p', '#')}`, rating: '', sub: `Độ khó ${puzzle.data.rating}` };
+  }
   if (mode === 'ai') {
     if (color === humanColor) {
       return { name: getUser()?.name ?? 'Bạn', rating: `Elo ${Math.round(loadBotRating().rating)}`, sub: `Bạn · quân ${COLOR_NAME[color]}` };
@@ -592,6 +612,16 @@ function setTool(name, visible, enabled = true) {
 function renderToolbar(end) {
   const reviewing = viewPly !== null;
   const humanTurn = mode === 'ai' && game.turn === humanColor && !aiThinking;
+  if (mode === 'puzzle') {
+    for (const name of ['undo', 'draw', 'resign', 'rematch', 'new', 'pgn']) setTool(name, false);
+    setTool('hint', true, puzzle.status === 'playing' && !reviewing);
+    setTool('next', true);
+    setTool('flip', true);
+    setTool('cam', use3D());
+    setTool('home', true);
+    return;
+  }
+  setTool('next', false);
   setTool('hint', mode === 'ai', humanTurn && !end.over && !reviewing && hintRequest === null);
   setTool('undo', (mode === 'ai' || mode === 'local') && !clock, game.moves.length > 0 && !aiThinking);
   setTool('draw', mode === 'online' && !end.over, socketReady && offer !== 'draw_sent');
@@ -621,6 +651,11 @@ function renderOfferBar() {
 }
 
 function renderHeader() {
+  if (mode === 'puzzle') {
+    els.gameTitle.textContent = `Giải đố · ${PUZZLE_TYPES[puzzle.data.type].label}`;
+    els.gameBadges.innerHTML = `<span class="badge">Độ khó ${puzzle.data.rating}</span>`;
+    return;
+  }
   const tc = findTimeControl(mode === 'online' ? onlineInfo.tc?.id : tcId);
   const titles = {
     ai: `Đấu với máy · cấp ${aiLevel}`,
@@ -696,7 +731,7 @@ function render({ move = null } = {}) {
   els.reviewBanner.hidden = live;
   els.reviewText.textContent = `Đang xem lại nước ${ply}/${total}`;
 
-  if (end.over && !endHandled) onGameEnd(end);
+  if (end.over && !endHandled && mode !== 'puzzle') onGameEnd(end);
 }
 
 // ---------- Kết thúc ván: âm thanh, Elo luyện tập, EXP, hộp thoại kết quả ----------
@@ -723,6 +758,18 @@ function onGameEnd(end) {
     }
     if (getUser()) reportBotGame(result, plies);
   }
+  resultExtra.achievements = recordAchievements({
+    type: 'game',
+    mode,
+    // Thắng máy nhờ gợi ý/hoàn tác không mở các thành tựu chiến thắng.
+    outcome: mode === 'ai' && assisted && outcome === 'win' ? 'assisted' : outcome,
+    reason: end.reason,
+    moves: game.moves,
+    me: mode === 'ai' ? humanColor : mode === 'online' ? myColor : null,
+    level: aiLevel,
+    rated: Boolean(lastOver?.rated),
+    view3d: use3D(),
+  });
   if (mode === 'online' && lastOver) {
     resultExtra.rating = lastOver.rating;
     resultExtra.xp = lastOver.xp;
@@ -774,6 +821,9 @@ function renderResultExtra() {
     if (xp.levelUp) parts.push(`<p class="extra-note highlight">🎉 Lên cấp ${xp.level}!</p>`);
     if (xp.gained === 0 && !xp.capped) parts.push('<p class="extra-note">Ván quá ngắn (dưới 6 nước mỗi bên) nên chưa được EXP.</p>');
     if (xp.capped) parts.push('<p class="extra-note">Đã đạt giới hạn EXP từ ván đấu với máy hôm nay.</p>');
+  }
+  for (const a of resultExtra.achievements ?? []) {
+    parts.push(`<div class="extra-row achievement-row"><span>${a.icon} Thành tựu mới: <b>${a.name}</b></span><strong>+${a.points}</strong></div>`);
   }
   if (resultExtra.note) parts.push(`<p class="extra-note">${resultExtra.note}</p>`);
   if (mode === 'online' && resultExtra.unrated) {
@@ -842,6 +892,7 @@ function canMove() {
   if (viewPly !== null || aiThinking || awaitingServer || lastEnd.over) return false;
   if (mode === 'ai') return game.turn === humanColor;
   if (mode === 'online') return socketReady && game.turn === myColor;
+  if (mode === 'puzzle') return puzzle.status !== 'solved' && puzzle.status !== 'reviewed' && game.turn === puzzle.playerColor;
   return mode === 'local';
 }
 
@@ -903,6 +954,7 @@ function afterLocalMove(m) {
 
 function sendOrPlay(from, to, promo) {
   selected = null;
+  if (mode === 'puzzle') return playPuzzleMove(from, to, promo);
   if (mode === 'online') {
     awaitingServer = true;
     send({ type: 'move', from, to, promo });
@@ -1023,7 +1075,10 @@ function resumeGame() {
 function show(screen) {
   for (const [name, el] of Object.entries(els.screens)) el.hidden = name !== screen;
   if (screen === 'game') applyView();
-  if (screen === 'menu') updateResumeCard();
+  if (screen === 'menu') {
+    updateResumeCard();
+    updatePuzzleCard();
+  }
   if (screen === 'ai') renderPracticeBox();
   if (screen === 'online') updateRatedHint();
   window.scrollTo(0, 0);
@@ -1041,6 +1096,8 @@ function resetState() {
   aiThinking = false;
   awaitingServer = false;
   hintRequest = null;
+  puzzle = null;
+  puzzleRatingChange = null;
   offer = null;
   lastOver = null;
   opponentAwayUntil = 0;
@@ -1093,6 +1150,7 @@ function restartGame() {
 
 function goHome() {
   if (mode === 'ai' || mode === 'local') saveGame();
+  stopSeekUi();
   if (socket) send({ type: 'leave' });
   writeJson(sessionStorage, ROOM_KEY, null);
   closeSocket();
@@ -1232,6 +1290,13 @@ function showChatBubble(color, id) {
 
 function handleServer(msg) {
   switch (msg.type) {
+    case 'seeking':
+      startSeekUi(msg);
+      break;
+    case 'seek_cancelled':
+      stopSeekUi();
+      closeSocket();
+      break;
     case 'room': {
       onlineInfo = { ...onlineInfo, code: msg.code, tc: msg.tc, rated: msg.rated };
       writeJson(sessionStorage, ROOM_KEY, { code: msg.code, token: msg.token });
@@ -1244,6 +1309,7 @@ function handleServer(msg) {
       break;
     }
     case 'start':
+      stopSeekUi();
       startOnline(msg);
       playSound('start');
       break;
@@ -1435,6 +1501,255 @@ async function openLeaderboard() {
   }
 })();
 
+
+// ---------- Giải đố chiếu hết ----------
+const PUZZLE_KEY = 'co-vua-puzzle'; // Puzzle Rating của khách (người có tài khoản lưu trên máy chủ)
+
+function puzzleProgress() {
+  const user = getUser();
+  if (user?.puzzle) return { ...DEFAULT_PUZZLE_RATING, ...user.puzzle };
+  return { ...DEFAULT_PUZZLE_RATING, ...readJson(localStorage, PUZZLE_KEY, {}) };
+}
+
+function updatePuzzleCard() {
+  const progress = puzzleProgress();
+  $('#puzzle-desc').textContent = progress.games
+    ? `Puzzle Rating ${Math.round(progress.rating)} · đã giải ${progress.solved}/${progress.games} bài`
+    : 'Chiếu hết trong 1 hoặc 2 nước, có Puzzle Rating';
+}
+
+async function startPuzzle() {
+  try {
+    puzzleList ??= await (await fetch('data/puzzles.json')).json();
+  } catch {
+    toast('Không tải được kho giải đố.');
+    return;
+  }
+  const recent = readJson(localStorage, 'co-vua-puzzle-recent', []);
+  const data = pickPuzzle(puzzleList, puzzleProgress().rating, recent);
+  writeJson(localStorage, 'co-vua-puzzle-recent', [data.id, ...recent].slice(0, Math.floor(puzzleList.length * 0.7)));
+  resetState();
+  mode = 'puzzle';
+  tcId = 'none';
+  clock = null;
+  game = new Game(data.fen);
+  puzzle = { data, playerColor: game.turn, status: 'playing', reported: false };
+  show('game');
+  render();
+  playSound('start');
+}
+
+function puzzleStatusText() {
+  const who = COLOR_NAME[puzzle.playerColor];
+  const change = puzzleRatingChange
+    ? ` Puzzle Rating ${puzzleRatingChange.before} → ${puzzleRatingChange.after} (${puzzleRatingChange.after >= puzzleRatingChange.before ? '+' : ''}${puzzleRatingChange.after - puzzleRatingChange.before}).`
+    : '';
+  if (puzzle.status === 'solved') return `Chính xác!${change}`;
+  if (puzzle.status === 'reviewed') return `Đã xem xong lời giải.${change}`;
+  if (aiThinking) return 'Đối phương đang chống đỡ...';
+  if (puzzle.status === 'failed') return `Chưa đúng. Hai ô màu xanh là nước đúng, hãy đi theo.${change}`;
+  return `Quân ${who} đi và ${PUZZLE_TYPES[puzzle.data.type].label.toLowerCase()}.`;
+}
+
+// Nước đúng tiếp theo theo lời giải lưu sẵn (dùng để gợi ý khi đi sai).
+function expectedPuzzleMove() {
+  const uci = puzzle.data.line[game.moves.length];
+  const m = uci && legalMoves(game.state).find((x) => toUci(x) === uci);
+  if (m) return m;
+  return mateMoves(game.state)[0] ?? legalMoves(game.state).find((x) => forcesMateIn2(game.state, x)) ?? null;
+}
+
+// Nước chống đỡ khó nhất: nước làm bên giải có ít cách chiếu hết nhất.
+function strongestDefense(state) {
+  let best = null;
+  let fewest = Infinity;
+  for (const r of legalMoves(state)) {
+    const count = mateMoves(applyMove(state, r)).length;
+    if (count < fewest) {
+      fewest = count;
+      best = r;
+    }
+  }
+  return best;
+}
+
+function playPuzzleMove(from, to, promo) {
+  const before = game.state;
+  const m = game.play(from, to, promo);
+  if (!m) return;
+  hintMove = null;
+  moveSound(m);
+  const ply = game.moves.length - 1;
+  // Chấp nhận mọi nước đúng, không chỉ đúng đường giải lưu sẵn (có thể có nhiều cách chiếu hết).
+  const needsMateNow = puzzle.data.type === 'mate1' || ply === 2;
+  const correct = needsMateNow ? isCheckmate(game.state) : forcesMateIn2(before, m);
+  render({ move: m });
+
+  if (!correct) {
+    reportPuzzle(false);
+    puzzle.status = 'failed';
+    playSound('error');
+    setTimeout(() => {
+      if (mode !== 'puzzle') return;
+      game.undo();
+      const hint = expectedPuzzleMove();
+      hintMove = hint && { from: hint.from, to: hint.to };
+      render();
+    }, 700);
+    return;
+  }
+  if (isCheckmate(game.state)) {
+    const wasFailed = puzzle.status === 'failed';
+    puzzle.status = wasFailed ? 'reviewed' : 'solved';
+    if (!wasFailed) reportPuzzle(true);
+    setTimeout(() => playSound(wasFailed ? 'draw' : 'win'), 250);
+    render();
+    return;
+  }
+  // Còn một nước nữa: đối phương chống đỡ.
+  aiThinking = true;
+  render();
+  setTimeout(() => {
+    if (mode !== 'puzzle') return;
+    aiThinking = false;
+    const planned = toUci(m) === puzzle.data.line[0] && legalMoves(game.state).find((x) => toUci(x) === puzzle.data.line[1]);
+    const reply = planned || strongestDefense(game.state);
+    const played = game.play(reply.from, reply.to, reply.promo);
+    moveSound(played);
+    if (puzzle.status === 'failed') {
+      const hint = expectedPuzzleMove();
+      hintMove = hint && { from: hint.from, to: hint.to };
+    }
+    render({ move: played });
+  }, 500);
+}
+
+function showPuzzleHint() {
+  if (mode !== 'puzzle' || puzzle.status !== 'playing') return;
+  reportPuzzle(false); // xem gợi ý coi như chưa giải được
+  puzzle.status = 'failed';
+  const hint = expectedPuzzleMove();
+  hintMove = hint && { from: hint.from, to: hint.to };
+  render();
+}
+
+// Ghi kết quả một lần cho mỗi bài: khách tính trên máy, người có tài khoản do máy chủ tính.
+async function reportPuzzle(solved) {
+  if (puzzle.reported) return;
+  puzzle.reported = true;
+  const before = puzzleProgress();
+  let after;
+  if (getUser()) {
+    try {
+      const res = await fetch('/api/progress/puzzle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: puzzle.data.id, solved }),
+      });
+      if (!res.ok) throw new Error('lỗi máy chủ');
+      after = (await res.json()).puzzle;
+      await refreshAccount();
+    } catch {
+      after = null;
+    }
+  }
+  if (!after) {
+    after = updatePuzzleRating(before, puzzle.data.rating, solved);
+    if (!getUser()) writeJson(localStorage, PUZZLE_KEY, after);
+  }
+  if (mode !== 'puzzle') return;
+  puzzleRatingChange = { before: Math.round(before.rating), after: Math.round(after.rating) };
+  const fresh = recordAchievements({ type: 'puzzle', solved, streak: after.streak, rating: after.rating, totalSolved: after.solved });
+  fresh.forEach((a, i) => setTimeout(() => toast(`${a.icon} Thành tựu mới: ${a.name} (+${a.points})`), 600 + i * 2800));
+  render();
+}
+
+// ---------- Thành tựu ----------
+const ACH_KEY = 'co-vua-achievements';
+const achievementProgress = () => ({ unlocked: {}, counters: {}, ...readJson(localStorage, ACH_KEY, {}) });
+
+function recordAchievements(event) {
+  const progress = achievementProgress();
+  const fresh = evaluateAchievements(progress, event);
+  writeJson(localStorage, ACH_KEY, progress);
+  if (fresh.length && getUser()) syncAchievements();
+  return fresh;
+}
+
+// Đồng bộ với tài khoản: hợp nhất hai phía, giữ thời điểm mở khóa sớm nhất.
+async function syncAchievements() {
+  const progress = achievementProgress();
+  const remote = getUser()?.achievements ?? {};
+  for (const [id, at] of Object.entries(remote)) {
+    if (!progress.unlocked[id] || at < progress.unlocked[id]) progress.unlocked[id] = at;
+  }
+  writeJson(localStorage, ACH_KEY, progress);
+  try {
+    await fetch('/api/achievements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ unlocked: progress.unlocked }),
+    });
+  } catch {
+    // Mất mạng: lần sau đồng bộ lại.
+  }
+}
+
+function openAchievements() {
+  const { unlocked, counters } = achievementProgress();
+  const total = ACHIEVEMENTS.reduce((s, a) => s + a.points, 0);
+  const count = ACHIEVEMENTS.filter((a) => unlocked[a.id]).length;
+  $('#ach-summary').textContent = `${count}/${ACHIEVEMENTS.length} thành tựu · ${achievementPoints(unlocked)}/${total} điểm`;
+  const groups = [...new Set(ACHIEVEMENTS.map((a) => a.group))];
+  const list = $('#ach-list');
+  list.replaceChildren();
+  for (const group of groups) {
+    const title = document.createElement('h3');
+    title.className = 'ach-group';
+    title.textContent = group;
+    list.append(title);
+    for (const a of ACHIEVEMENTS.filter((x) => x.group === group)) {
+      const done = Boolean(unlocked[a.id]);
+      const secret = a.hidden && !done;
+      const item = document.createElement('div');
+      item.className = `ach${done ? ' done' : ''}`;
+      const progressText = a.goal && !done ? ` (${Math.min(counters[a.goal.key] ?? 0, a.goal.value)}/${a.goal.value})` : '';
+      item.innerHTML =
+        `<span class="ach-icon">${secret ? '❔' : a.icon}</span>` +
+        `<span class="ach-text"><strong></strong><span></span></span><span class="ach-points">${a.points}</span>`;
+      item.querySelector('strong').textContent = secret ? 'Thành tựu ẩn' : a.name;
+      item.querySelector('.ach-text span').textContent = secret ? 'Tiếp tục chơi để khám phá.' : a.desc + progressText;
+      list.append(item);
+    }
+  }
+  if (!els.achievementsDialog.open) els.achievementsDialog.showModal();
+}
+
+// ---------- Ghép trận ngẫu nhiên ----------
+function seekOpponent() {
+  els.roomBox.hidden = true;
+  els.onlineMsg.textContent = 'Đang kết nối...';
+  connect(() => send({ type: 'seek', tc: prefs.onlineTc }));
+}
+
+function startSeekUi(msg) {
+  els.onlineMsg.textContent = '';
+  els.seekBox.hidden = false;
+  seekStarted = Date.now();
+  const update = () => {
+    const seconds = Math.floor((Date.now() - seekStarted) / 1000);
+    els.seekText.textContent = `Đang tìm đối thủ ${msg.tc.short} (rating ${msg.rating})... ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  };
+  update();
+  clearInterval(seekTimer);
+  seekTimer = setInterval(update, 1000);
+}
+
+function stopSeekUi() {
+  clearInterval(seekTimer);
+  els.seekBox.hidden = true;
+}
+
 // ---------- Gắn sự kiện ----------
 els.board.addEventListener('click', (e) => {
   const sq = e.target.closest('.sq');
@@ -1443,6 +1758,15 @@ els.board.addEventListener('click', (e) => {
 
 $('#btn-ai').addEventListener('click', () => show('ai'));
 $('#btn-local').addEventListener('click', () => show('local'));
+$('#btn-puzzle').addEventListener('click', startPuzzle);
+$('#tool-next').addEventListener('click', startPuzzle);
+$('#menu-achievements').addEventListener('click', openAchievements);
+$('#achievements-close').addEventListener('click', () => els.achievementsDialog.close());
+els.achievementsDialog.addEventListener('click', (e) => {
+  if (e.target === els.achievementsDialog) els.achievementsDialog.close();
+});
+$('#seek-opponent').addEventListener('click', seekOpponent);
+$('#seek-cancel').addEventListener('click', () => send({ type: 'cancel_seek' }));
 $('#btn-online').addEventListener('click', () => {
   els.onlineMsg.textContent = '';
   els.roomBox.hidden = true;
@@ -1486,7 +1810,7 @@ function requestHome() {
 document.querySelectorAll('[data-home]').forEach((btn) => btn.addEventListener('click', requestHome));
 
 // Thanh công cụ
-$('#tool-hint').addEventListener('click', askHint);
+$('#tool-hint').addEventListener('click', () => (mode === 'puzzle' ? showPuzzleHint() : askHint()));
 $('#tool-undo').addEventListener('click', undoMove);
 $('#tool-draw').addEventListener('click', () => {
   send({ type: 'draw_offer' });
@@ -1608,11 +1932,14 @@ initAccount({
   button: $('#btn-account'),
   banner: $('#account-banner'),
   dialog: $('#account-dialog'),
-  onChange: () => {
+  onChange: (user) => {
     updateRatedHint();
+    updatePuzzleCard();
+    if (user) syncAchievements();
     if (mode !== null) render();
   },
   onLeaderboard: openLeaderboard,
+  onAchievements: openAchievements,
   toast,
 });
 
@@ -1624,6 +1951,7 @@ if (new URLSearchParams(location.search).has('debug')) {
     selected: () => selected,
     clock: () => clock,
     viewPly: () => viewPly,
+    puzzle: () => puzzle,
     // Nạp một thế cờ (FEN) để kiểm thử các tình huống như phong cấp.
     load(fen) {
       resetState();

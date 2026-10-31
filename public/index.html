@@ -84,12 +84,21 @@
             <span class="mode-icon" data-icon="wK"></span>
             <span class="mode-text">
               <span class="mode-title">Chơi online</span>
-              <span class="mode-desc">Mời bạn bè bằng liên kết, có xếp hạng</span>
+              <span class="mode-desc">Tìm đối thủ ngẫu nhiên hoặc mời bạn bè, có xếp hạng</span>
+            </span>
+          </button>
+          <button id="btn-puzzle" class="mode-card">
+            <span class="mode-icon" data-icon="wB"></span>
+            <span class="mode-text">
+              <span class="mode-title">Giải đố</span>
+              <span class="mode-desc" id="puzzle-desc">Chiếu hết trong 1 hoặc 2 nước, có Puzzle Rating</span>
             </span>
           </button>
         </div>
         <div class="menu-links">
           <button id="menu-leaderboard" class="link-btn">Bảng xếp hạng</button>
+          <span aria-hidden="true">·</span>
+          <button id="menu-achievements" class="link-btn">Thành tựu</button>
           <span aria-hidden="true">·</span>
           <button id="menu-settings" class="link-btn">Tùy chỉnh quân cờ, bàn cờ, 2D / 3D</button>
         </div>
@@ -152,7 +161,14 @@
         </div>
         <label class="switch"><input id="online-rated" type="checkbox" checked><span class="track"></span>Tính điểm xếp hạng</label>
         <p id="rated-hint" class="hint"></p>
-        <button id="create-room" class="btn primary block">Tạo phòng mới</button>
+        <button id="seek-opponent" class="btn primary block">Tìm đối thủ ngẫu nhiên</button>
+        <div id="seek-box" class="seek-box" hidden>
+          <span class="dot-pulse" aria-hidden="true"></span>
+          <span id="seek-text"></span>
+          <button id="seek-cancel" class="btn small">Hủy</button>
+        </div>
+        <div class="divider"><span>hoặc chơi với bạn bè</span></div>
+        <button id="create-room" class="btn block">Tạo phòng mới để mời bạn</button>
         <div id="room-box" class="room-box" hidden>
           <span class="label">Mã phòng</span>
           <div id="room-code-text" class="room-code"></div>
@@ -229,6 +245,7 @@
             <button class="tool" id="tool-draw" title="Xin hòa"><svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="17.5" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" stroke="none">½</text></svg><span>Xin hòa</span></button>
             <button class="tool danger" id="tool-resign" title="Đầu hàng"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 22V4"/><path d="M5 4h12l-2.5 4L17 12H5"/></svg><span>Đầu hàng</span></button>
             <button class="tool" id="tool-rematch" title="Tái đấu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg><span>Tái đấu</span></button>
+            <button class="tool" id="tool-next" title="Bài tiếp theo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/><path d="M4 12h11"/></svg><span>Bài tiếp</span></button>
             <button class="tool" id="tool-new" title="Ván mới"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span>Ván mới</span></button>
             <button class="tool" id="tool-flip" title="Lật bàn cờ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 16V4"/><path d="m3 8 4-4 4 4"/><path d="M17 8v12"/><path d="m21 16-4 4-4-4"/></svg><span>Lật bàn</span></button>
             <button class="tool" id="tool-cam" title="Đặt lại góc nhìn 3D"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span>Góc nhìn</span></button>
@@ -312,6 +329,18 @@
       <div id="lb-pools" class="segmented" role="radiogroup" aria-label="Nhóm xếp hạng"></div>
       <ol id="lb-list" class="lb-list"></ol>
       <p class="hint">Xếp theo rating Glicko-2 đã trừ độ bất định, nên người mới chưa thể vượt lên đầu bảng sau vài ván may mắn. Dấu "?" là rating tạm, chưa đủ ván để chắc chắn.</p>
+    </div>
+  </dialog>
+
+  <!-- Hộp thoại thành tựu -->
+  <dialog id="achievements-dialog" class="dialog">
+    <div class="dialog-head">
+      <h2>Thành tựu</h2>
+      <button id="achievements-close" class="icon-btn" aria-label="Đóng">✕</button>
+    </div>
+    <div class="dialog-body">
+      <p id="ach-summary" class="ach-summary"></p>
+      <div id="ach-list" class="ach-list"></div>
     </div>
   </dialog>
 

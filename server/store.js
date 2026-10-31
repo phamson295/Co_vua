@@ -6,6 +6,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { DEFAULT_RATING, PROVISIONAL_RD, rateGame, levelFromXp } from '../public/js/rating.js';
+import { DEFAULT_PUZZLE_RATING, updatePuzzleRating } from '../public/js/puzzle-core.js';
+import { ACHIEVEMENT_IDS } from '../public/js/achievements.js';
 
 const SAVE_DELAY_MS = 300;
 
@@ -140,6 +142,38 @@ export class Store {
         games: r.games,
         provisional: r.rd > PROVISIONAL_RD,
       }));
+  }
+
+  // ----- Giải đố -----
+  recordPuzzle(user, puzzleRating, solved) {
+    user.puzzle = updatePuzzleRating({ ...DEFAULT_PUZZLE_RATING, ...user.puzzle }, puzzleRating, solved);
+    this.saveSoon();
+    return user.puzzle;
+  }
+
+  // ----- Thành tựu: hợp nhất danh sách đã mở (giữ thời điểm mở sớm nhất) -----
+  mergeAchievements(user, unlocked) {
+    user.achievements ??= {};
+    for (const [id, at] of Object.entries(unlocked ?? {})) {
+      if (!ACHIEVEMENT_IDS.has(id)) continue;
+      const time = Number(at) || Date.now();
+      if (!user.achievements[id] || time < user.achievements[id]) user.achievements[id] = time;
+    }
+    this.saveSoon();
+    return user.achievements;
+  }
+
+  // ----- Quản lý tài khoản -----
+  rename(user, name) {
+    user.name = name;
+    this.saveSoon();
+  }
+
+  deleteUser(user) {
+    if (user.loginEmail) this.byEmail.delete(user.loginEmail);
+    for (const [provider, id] of Object.entries(user.providers ?? {})) this.byProvider.delete(`${provider}:${id}`);
+    delete this.data.users[user.id];
+    this.saveSoon();
   }
 
   recordOnline(userId, result) {

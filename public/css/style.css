@@ -288,7 +288,8 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 28px; }
 .resume-discard:hover { background: var(--surface-2); color: var(--text); }
 
 .mode-grid { display: grid; gap: 12px; grid-template-columns: 1fr; max-width: 780px; margin: 0 auto; }
-@media (min-width: 720px) { .mode-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 720px) { .mode-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1000px) { .mode-grid { grid-template-columns: repeat(4, 1fr); max-width: 1000px; } .account-banner, .resume-card { max-width: 1000px; } }
 .mode-card {
   display: flex;
   align-items: center;
@@ -871,3 +872,33 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 28px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Ghép trận ---------- */
+.seek-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  font-weight: 650;
+}
+.seek-box #seek-text { flex: 1; font-variant-numeric: tabular-nums; }
+
+/* ---------- Thành tựu ---------- */
+.ach-summary { margin: 0; font-weight: 700; color: var(--accent); }
+.ach-list { display: flex; flex-direction: column; gap: 6px; }
+.ach-group { margin: 10px 0 2px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); }
+.ach { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); opacity: 0.6; }
+.ach.done { opacity: 1; border: 1px solid var(--accent-soft); background: linear-gradient(120deg, var(--accent-soft), transparent 70%), var(--surface-2); }
+.ach-icon { flex: none; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; background: var(--surface); filter: grayscale(1); }
+.ach.done .ach-icon { filter: none; }
+.ach-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.ach-text span { font-size: 0.82rem; color: var(--muted); }
+.ach-points { font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ach.done .ach-points { color: var(--accent); }
+.achievement-row span { color: var(--text) !important; }
+
+/* ---------- Tài khoản: thao tác ---------- */
+.account-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn.danger-outline { color: var(--danger); border-color: var(--danger-soft); }

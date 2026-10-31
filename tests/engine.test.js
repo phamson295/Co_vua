@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fromFen, perft, Game, sqIndex } from '../public/js/engine.js';
+import { fromFen, toFen, toUci, perft, Game, sqIndex, START_FEN } from '../public/js/engine.js';
 
 // Số thế cờ chuẩn (perft) của các vị trí kiểm thử phổ biến trên chessprogramming wiki.
 test('perft vị trí xuất phát', () => {
@@ -109,4 +109,17 @@ test('hoàn tác nước đi trả lại đúng trạng thái', () => {
   assert.equal(g.turn, 'w');
   assert.equal(g.state.board[sqIndex('e2')], 'wP');
   assert.equal(g.moves.length, 0);
+});
+
+test('FEN: đọc rồi ghi ra giữ nguyên', () => {
+  for (const fen of [
+    START_FEN,
+    'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1',
+    'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2',
+    '8/8/8/4k3/8/8/8/4K3 b - - 12 40',
+  ]) assert.equal(toFen(fromFen(fen)), fen);
+  const g = new Game();
+  assert.equal(toUci(g.play(sqIndex('e2'), sqIndex('e4'))), 'e2e4');
+  const promo = new Game('7k/4P3/8/8/8/8/8/4K3 w - - 0 1');
+  assert.equal(toUci(promo.play(sqIndex('e7'), sqIndex('e8'), 'N')), 'e7e8n');
 });

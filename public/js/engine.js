@@ -253,6 +253,31 @@ export function legalMoves(state) {
   return pseudoMoves(state).filter((m) => !isInCheck(applyMove(state, m).board, state.turn));
 }
 
+// Ghi trạng thái ra chuỗi FEN (ngược với fromFen).
+export function toFen(s) {
+  const rows = [];
+  for (let r = 0; r < 8; r++) {
+    let row = '';
+    let empty = 0;
+    for (let c = 0; c < 8; c++) {
+      const p = s.board[r * 8 + c];
+      if (!p) {
+        empty++;
+        continue;
+      }
+      if (empty) row += empty;
+      empty = 0;
+      row += p[0] === WHITE ? p[1] : p[1].toLowerCase();
+    }
+    if (empty) row += empty;
+    rows.push(row);
+  }
+  return `${rows.join('/')} ${s.turn} ${s.castling || '-'} ${s.ep >= 0 ? sqName(s.ep) : '-'} ${s.half} ${s.full}`;
+}
+
+// Nước đi dạng UCI: "e2e4", "e7e8q"
+export const toUci = (m) => sqName(m.from) + sqName(m.to) + (m.promo ? m.promo.toLowerCase() : '');
+
 // Ký hiệu đại số chuẩn (SAN) của nước `m` đi từ thế `state`, ví dụ: e4, Nf3, exd5, O-O, e8=Q+, Qh4#
 export function toSan(state, m) {
   const type = m.piece[1];

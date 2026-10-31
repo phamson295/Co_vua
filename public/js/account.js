@@ -3,7 +3,7 @@
 import { POOLS } from './shared.js';
 
 const state = { user: null, providers: {} };
-let options = { onChange() {}, toast() {}, onLeaderboard() {} };
+let options = { onChange() {}, toast() {}, onLeaderboard() {}, onAchievements() {} };
 let dom = {};
 let tab = 'login';
 
@@ -266,6 +266,14 @@ function profileView() {
     ),
     h('div', { class: 'label' }, 'Thống kê chơi online'),
     h('div', { class: 'stats' }, stat(stats.played, 'Ván'), stat(stats.wins, 'Thắng'), stat(stats.losses, 'Thua'), stat(stats.draws, 'Hòa')),
+    h('div', { class: 'label' }, 'Giải đố và thành tựu'),
+    h(
+      'div',
+      { class: 'stats three' },
+      stat(Math.round(user.puzzle?.rating ?? 1000), 'Puzzle Rating'),
+      stat(user.puzzle?.solved ?? 0, 'Bài đã giải'),
+      stat(Object.keys(user.achievements ?? {}).length, 'Thành tựu'),
+    ),
   ];
 
   if (user.kind === 'quick') {
@@ -281,19 +289,44 @@ function profileView() {
     );
   }
 
+  const renameInput = h('input', { type: 'text', value: user.name, maxlength: 24, autocomplete: 'nickname', 'aria-label': 'Tên hiển thị mới' });
+  const renameForm = form('Lưu tên mới', [field('Tên hiển thị', renameInput)], () => request('/api/account/name', { name: renameInput.value }), (data) => {
+    setUser(data.user);
+    render();
+    options.toast('Đã đổi tên hiển thị.');
+  });
+  renameForm.hidden = true;
+
   nodes.push(
     h(
-      'button',
-      {
-        class: 'btn block',
-        type: 'button',
-        onclick() {
-          dom.dialog.close();
-          options.onLeaderboard();
+      'div',
+      { class: 'account-actions' },
+      h('button', { class: 'btn', type: 'button', onclick: () => (dom.dialog.close(), options.onLeaderboard()) }, 'Bảng xếp hạng'),
+      h('button', { class: 'btn', type: 'button', onclick: () => (dom.dialog.close(), options.onAchievements()) }, 'Thành tựu'),
+      h('button', { class: 'btn', type: 'button', onclick: () => (renameForm.hidden = !renameForm.hidden) }, 'Đổi tên hiển thị'),
+      h(
+        'button',
+        {
+          class: 'btn danger-outline',
+          type: 'button',
+          async onclick() {
+            const answer = window.prompt('Xóa tài khoản sẽ mất toàn bộ rating, EXP, thống kê và không khôi phục được. Gõ XÓA để xác nhận:');
+            if (answer === null) return;
+            try {
+              await request('/api/account/delete', { confirm: answer.trim().toUpperCase() });
+              setUser(null);
+              tab = 'login';
+              dom.dialog.close();
+              options.toast('Đã xóa tài khoản.');
+            } catch (e) {
+              options.toast(e.message);
+            }
+          },
         },
-      },
-      'Xem bảng xếp hạng',
+        'Xóa tài khoản',
+      ),
     ),
+    renameForm,
     h(
       'button',
       {
@@ -343,8 +376,8 @@ function handleLoginRedirect() {
   else options.toast(`Đăng nhập thành công${state.user ? `, xin chào ${state.user.name}!` : '.'}`);
 }
 
-export async function initAccount({ button, banner, dialog, onChange, toast, onLeaderboard }) {
-  options = { onChange, toast, onLeaderboard };
+export async function initAccount({ button, banner, dialog, onChange, toast, onLeaderboard, onAchievements }) {
+  options = { onChange, toast, onLeaderboard, onAchievements };
   dom = { button, banner, dialog, title: dialog.querySelector('#account-title'), body: dialog.querySelector('#account-body') };
   button.addEventListener('click', () => openAccount());
   dialog.querySelector('#account-close').addEventListener('click', () => dialog.close());

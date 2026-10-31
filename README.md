@@ -1,10 +1,14 @@
 # Cờ vua (web)
 
-Game cờ vua chạy trên trình duyệt, dùng được trên điện thoại và máy tính, với 3 chế độ:
+Game cờ vua chạy trên trình duyệt, dùng được trên điện thoại và máy tính, với 4 chế độ:
 
 - **Chơi với máy**: 12 cấp độ, chọn cầm Trắng/Đen/ngẫu nhiên, có đồng hồ, **gợi ý nước đi**, hoàn tác (khi không tính giờ) và **Elo luyện tập** (lưu trên máy, kèm gợi ý cấp độ vừa sức).
 - **Hai người, một máy**: có đồng hồ thi đấu. Chọn cách ngồi: **Đối diện** (mặc định: bàn cờ đứng yên, quân Đen cùng thanh tên và đồng hồ bên Đen quay ngược về phía người cầm Đen), **Xoay bàn theo lượt**, hoặc **Cùng một phía**.
-- **Chơi online**: tạo phòng, mời bạn bè bằng liên kết hoặc mã 5 ký tự. Máy chủ kiểm tra từng nước đi và giữ đồng hồ. Có **xin hòa, tái đấu (đổi màu quân), chat nhanh**, **tự nối lại** khi mất mạng hoặc tải lại trang (giữ ván 60 giây; quá thời gian thì xử thua), và **xếp hạng Glicko-2** khi cả hai đã đăng nhập.
+- **Chơi online**: **tìm đối thủ ngẫu nhiên** (ghép người cùng thể thức thời gian, rating gần nhau; chờ càng lâu khoảng chênh càng nới rộng, tối đa 500), hoặc tạo phòng mời bạn bè bằng liên kết/mã 5 ký tự. Máy chủ kiểm tra từng nước đi và giữ đồng hồ. Có **xin hòa, tái đấu (đổi màu quân), chat nhanh**, **tự nối lại** khi mất mạng hoặc tải lại trang (giữ ván 60 giây; quá thời gian thì xử thua), và **xếp hạng Glicko-2** khi cả hai đã đăng nhập.
+
+- **Giải đố**: 269 bài chiếu hết trong 1 hoặc 2 nước, có **Puzzle Rating** (khởi điểm 1000). Bài được chọn khó hơn hoặc dễ hơn vừa phải để tỷ lệ giải đúng khoảng 70%. Đi sai hoặc xem gợi ý thì tính là chưa giải được; máy hiện nước đúng để bạn đi theo. Chấp nhận mọi cách chiếu hết hợp lệ, không chỉ đáp án lưu sẵn.
+
+**Thành tựu:** 25 thành tựu trong 3 nhóm (Ván cờ, Kỹ thuật, Giải đố), tổng 655 điểm, ví dụ: thắng máy cấp 12, chiếu hết bằng Mã, lội ngược dòng, chuỗi 5 bài giải đúng. Lưu trên trình duyệt và đồng bộ với tài khoản khi đăng nhập.
 
 Luật đầy đủ: nhập thành, bắt tốt qua đường, phong cấp, chiếu, chiếu hết, hết nước đi (hòa), lặp lại thế cờ 3 lần (hòa), luật 50 nước (hòa), không đủ quân để chiếu hết (hòa). Hết giờ thì thua, trừ khi bên còn lại không đủ quân để chiếu hết (khi đó hòa).
 
@@ -21,6 +25,8 @@ Hiện thực hóa một phần [tài liệu thiết kế](docs/he-thong-xep-han
 | Rating Glicko-2 | Ván online, cả hai đã đăng nhập, phòng bật "Tính điểm" | Ba nhóm theo thời gian: Siêu chớp (dưới 3 phút ước tính), Cờ chớp (dưới 8 phút), Cờ nhanh. Khởi điểm 1500, dấu `?` khi chưa đủ ván. RD tăng dần khi nghỉ chơi |
 | Bảng xếp hạng | Từng nhóm thời gian | Xếp theo `rating − 2·RD` để người mới may mắn không vượt lên đầu |
 | EXP và cấp độ | Người có tài khoản | Ván online: 20 + thắng 20 / hòa 10. Ván với máy: (10 + thắng 20 / hòa 10) × hệ số theo cấp máy, tối đa 300 EXP/ngày. Ván dưới 6 nước mỗi bên không được EXP. Cấp `L` cần `100·L^0,9` EXP, tối đa cấp 50 |
+| Puzzle Rating | Mỗi bài giải đố | Elo với độ khó của bài (đúng = thắng). Khách lưu trên trình duyệt; người có tài khoản do máy chủ tính, mỗi bài giải đúng +5 EXP (tối đa 100 EXP/ngày) |
+| Thành tựu | Sau mỗi ván và mỗi bài giải đố | Điểm cộng dồn, không giảm. Thắng máy nhờ gợi ý/hoàn tác không mở thành tựu chiến thắng |
 | Elo luyện tập | Ván với máy, lưu trên máy người chơi | Elo một phía với Elo nội bộ của máy (cấp `n` ≈ `600 + 125·(n−1)`). Ván có dùng gợi ý hoặc hoàn tác không được tính |
 
 Ván online bị bỏ trước khi cả hai bên đi nước nào thì không tính điểm. Người bỏ ván giữa chừng bị xử thua và không được EXP.
@@ -46,7 +52,7 @@ Không bắt buộc đăng nhập: khách vẫn chơi được mọi chế độ
 | **Email** | Tên hiển thị, email, mật khẩu (từ 8 ký tự) | Mật khẩu băm bằng scrypt |
 | **Google / Facebook** | Quản trị viên cấu hình khóa OAuth | Nút tự bật khi có đủ khóa |
 
-Người đã đăng nhập dùng tên của mình khi chơi online (đối thủ thấy tên đó), có rating, EXP, cấp độ và thống kê (ván, thắng, thua, hòa) trong hồ sơ.
+Người đã đăng nhập dùng tên của mình khi chơi online (đối thủ thấy tên đó), có rating, Puzzle Rating, EXP, cấp độ, thành tựu và thống kê trong hồ sơ. Trong hồ sơ có thể **đổi tên hiển thị** và **xóa tài khoản** (gõ XÓA để xác nhận; xóa vĩnh viễn rating, EXP, thống kê).
 
 ### Cấu hình đăng nhập mạng xã hội
 
@@ -80,7 +86,16 @@ Mỗi tài khoản mạng xã hội là một tài khoản riêng, không tự g
 - **Dữ liệu lưu trong một file JSON.** Trên gói miễn phí của Render, ổ đĩa là tạm thời nên **tài khoản sẽ mất sau mỗi lần deploy hoặc khởi động lại**. Muốn lưu lâu dài cần gắn ổ đĩa bền vững (đặt `DATA_DIR` vào đó) hoặc đổi `server/store.js` sang cơ sở dữ liệu thật (ví dụ PostgreSQL). Cách này cũng chỉ phù hợp một máy chủ duy nhất.
 - Chưa xác minh email và chưa có chức năng quên mật khẩu (cần dịch vụ gửi email như SMTP hoặc Resend).
 - Đăng nhập Google/Facebook chưa được thử với khóa thật (đã kiểm thử luồng OAuth với máy chủ giả lập). Chưa có Zalo, Apple.
-- Chưa có xóa tài khoản và đổi tên hiển thị.
+
+## Kho bài giải đố
+
+Các bài do engine của dự án tự sinh (không lấy từ nguồn ngoài nên không vướng bản quyền): cho máy tự đấu ở nhiều cấp độ, lấy những thế cờ có **đúng một** nước chiếu hết (bài 1 nước), hoặc **đúng một** nước đầu buộc chiếu hết sau 2 nước và không có chiếu hết ngay (bài 2 nước). Độ khó ước lượng theo số nước có thể đi, nước giải có ăn quân hay không, có chiếu hay không. Bộ test kiểm tra lại toàn bộ lời giải mỗi lần chạy.
+
+Sinh thêm bài (chạy vài tiến trình song song cho nhanh rồi gộp, loại trùng):
+
+```bash
+node scripts/generate-puzzles.mjs 10 > puzzles-moi.json   # chạy 10 phút
+```
 
 ## Tài liệu thiết kế
 
@@ -117,6 +132,11 @@ public/
   js/engine.js             Luật cờ, ký hiệu SAN/PGN (dùng chung cho trình duyệt và máy chủ)
   js/shared.js             Thể thức thời gian, đồng hồ, câu chat nhanh (dùng chung)
   js/rating.js             Glicko-2, Elo luyện tập, EXP và cấp độ (dùng chung)
+  js/puzzle-core.js        Kiểm tra lời giải chiếu hết, Puzzle Rating, chọn bài (dùng chung)
+  js/achievements.js       Danh sách và cách chấm thành tựu (dùng chung)
+  data/puzzles.json        Kho 269 bài giải đố
+scripts/
+  generate-puzzles.mjs     Công cụ sinh bài giải đố từ các ván máy tự đấu
   js/ai.js                 Máy chơi: alpha-beta, quiescence, 12 cấp độ
   js/ai-worker.js          Chạy việc tính nước của máy ở luồng riêng (không làm đơ giao diện)
   js/app.js                Điều khiển giao diện: ván cờ, đồng hồ, xem lại, gợi ý, lưu ván, online
@@ -131,6 +151,7 @@ tests/
   auth.test.js             Kiểm thử tài khoản, OAuth (máy chủ giả lập), tên người chơi và thống kê online
   online.test.js           Kiểm thử online: đồng hồ, hết giờ, xin hòa, tái đấu, nối lại, bỏ ván, xếp hạng, EXP, chat
   shared.test.js           Kiểm thử đồng hồ, Glicko-2, Elo luyện tập, EXP
+  features.test.js         Kiểm chứng từng bài giải đố, thành tựu, ghép trận, API giải đố/thành tựu/tài khoản
 ```
 
 ## Các cấp độ máy
@@ -158,7 +179,8 @@ Gói miễn phí của Render sẽ tạm ngủ sau một thời gian không có 
 ## Giới hạn hiện tại
 
 - Máy chủ giữ phòng trong bộ nhớ, nên khởi động lại máy chủ (kể cả khi Render deploy lại) sẽ mất các ván online đang diễn ra.
-- Chưa có ghép trận ngẫu nhiên theo rating (hiện chỉ chơi bằng phòng mời), chưa có giải đấu, thành tựu và giải đố trong tài liệu thiết kế.
+- Chưa có **giải đấu** (Swiss/Arena trong tài liệu thiết kế): cần nhiều người online cùng lúc, lịch thi đấu và máy chủ chạy liên tục mới có ý nghĩa.
+- Giải đố hiện chỉ có dạng chiếu hết trong 1–2 nước; độ khó ban đầu là ước lượng, chưa hiệu chỉnh theo kết quả người chơi thật.
 - Chat chỉ có câu soạn sẵn (không gõ tự do), để không phải kiểm duyệt nội dung.
 - Elo luyện tập lưu trên từng thiết bị, chưa đồng bộ giữa các máy.
 - Chế độ 3D cần trình duyệt hỗ trợ WebGL; nếu không, ứng dụng tự quay về 2D. Quân 3D là hình khối dựng bằng hình học, chưa phải mô hình chạm khắc chi tiết.
