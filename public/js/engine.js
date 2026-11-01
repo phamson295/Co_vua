@@ -79,6 +79,36 @@ export function isAttacked(board, sq, by) {
   return false;
 }
 
+// Các ô có quân màu `by` đang tấn công ô `sq` (dùng để biết quân nào đang chiếu Vua).
+export function attackers(board, sq, by) {
+  const found = [];
+  const r = sq >> 3;
+  const c = sq & 7;
+  const check = (rr, cc, types) => {
+    if (inside(rr, cc) && types.includes(board[rr * 8 + cc]?.slice(1)) && board[rr * 8 + cc][0] === by) found.push(rr * 8 + cc);
+  };
+  const pawnRow = by === WHITE ? r + 1 : r - 1;
+  for (const dc of [-1, 1]) check(pawnRow, c + dc, ['P']);
+  for (const [dr, dc] of KNIGHT_STEPS) check(r + dr, c + dc, ['N']);
+  for (const [dr, dc] of KING_STEPS) check(r + dr, c + dc, ['K']);
+  for (const [steps, slider] of [[ROOK_STEPS, 'R'], [BISHOP_STEPS, 'B']]) {
+    for (const [dr, dc] of steps) {
+      let nr = r + dr;
+      let nc = c + dc;
+      while (inside(nr, nc)) {
+        const p = board[nr * 8 + nc];
+        if (p) {
+          if (p[0] === by && (p[1] === slider || p[1] === 'Q')) found.push(nr * 8 + nc);
+          break;
+        }
+        nr += dr;
+        nc += dc;
+      }
+    }
+  }
+  return found;
+}
+
 export function isInCheck(board, color) {
   const king = board.indexOf(color + 'K');
   return king >= 0 && isAttacked(board, king, opponent(color));

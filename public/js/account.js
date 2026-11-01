@@ -1,6 +1,7 @@
 // Tài khoản phía trình duyệt: đăng nhập, đăng ký, chơi nhanh (tài khoản chỉ cần biệt danh), hồ sơ.
 // Người chơi không đăng nhập vẫn chơi bình thường với tư cách khách.
 import { POOLS } from './shared.js';
+import { t } from './i18n.js';
 
 const state = { user: null, providers: {} };
 let options = { onChange() {}, toast() {}, onLeaderboard() {}, onAchievements() {} };
@@ -10,16 +11,16 @@ let tab = 'login';
 export const getUser = () => state.user;
 
 const KIND_LABEL = {
-  email: 'Tài khoản email',
-  quick: 'Tài khoản nhanh',
-  google: 'Đăng nhập bằng Google',
-  facebook: 'Đăng nhập bằng Facebook',
+  email: 'acc.kind.email',
+  quick: 'acc.kind.quick',
+  google: 'acc.kind.google',
+  facebook: 'acc.kind.facebook',
 };
 const LOGIN_ERRORS = {
-  cancel: 'Bạn đã hủy đăng nhập.',
-  state: 'Phiên đăng nhập đã hết hạn, hãy thử lại.',
-  provider: 'Cách đăng nhập này chưa được bật trên máy chủ.',
-  failed: 'Đăng nhập thất bại, hãy thử lại.',
+  cancel: 'acc.loginError.cancel',
+  state: 'acc.loginError.state',
+  provider: 'acc.loginError.provider',
+  failed: 'acc.loginError.failed',
 };
 
 // Tạo phần tử DOM; nội dung chữ luôn đi qua text node nên không có nguy cơ chèn mã HTML.
@@ -48,7 +49,7 @@ async function request(path, body) {
       credentials: 'same-origin',
     });
   } catch {
-    throw new Error('Không kết nối được máy chủ.');
+    throw new Error(t('acc.noServer'));
   }
   let data = {};
   try {
@@ -56,7 +57,10 @@ async function request(path, body) {
   } catch {
     // Phản hồi không có nội dung JSON.
   }
-  if (!res.ok) throw new Error(data.error || 'Có lỗi xảy ra, hãy thử lại.');
+  if (!res.ok) {
+    const k = `err.${data.code}`;
+    throw new Error(data.code && t(k) !== k ? t(k) : data.error || t('acc.genericError'));
+  }
   return data;
 }
 
@@ -90,10 +94,10 @@ function renderButton() {
   const button = dom.button;
   if (state.user) {
     button.replaceChildren(h('span', { class: 'initial' }, initial(state.user.name)));
-    button.title = `Tài khoản: ${state.user.name}`;
+    button.title = t('acc.buttonTitle', { name: state.user.name });
   } else {
     button.innerHTML = PERSON_ICON;
-    button.title = 'Đăng nhập / Đăng ký';
+    button.title = t('acc.loginRegister');
   }
 }
 
@@ -107,10 +111,10 @@ function renderBanner() {
           h(
             'div',
             { class: 'banner-text' },
-            h('strong', {}, `Xin chào, ${user.name}!`),
+            h('strong', {}, t('acc.hello', { name: user.name })),
             xpLine(user.xp),
           ),
-          h('button', { class: 'btn', type: 'button', onclick: () => openAccount() }, 'Tài khoản'),
+          h('button', { class: 'btn', type: 'button', onclick: () => openAccount() }, t('acc.account')),
         )
       : h(
           'div',
@@ -118,10 +122,10 @@ function renderBanner() {
           h(
             'div',
             { class: 'banner-text' },
-            h('strong', {}, 'Chơi ngay không cần đăng ký'),
-            h('span', {}, 'Đăng nhập để lưu thống kê và dùng tên của bạn khi chơi online.'),
+            h('strong', {}, t('acc.bannerTitle')),
+            h('span', {}, t('acc.bannerText')),
           ),
-          h('button', { class: 'btn primary', type: 'button', onclick: () => openAccount('login') }, 'Đăng nhập'),
+          h('button', { class: 'btn primary', type: 'button', onclick: () => openAccount('login') }, t('acc.login')),
         ),
   );
 }
@@ -133,9 +137,9 @@ function xpLine(xp) {
   return h(
     'span',
     { class: 'xp-line' },
-    h('span', { class: 'level-badge' }, `Cấp ${xp.level}`),
+    h('span', { class: 'level-badge' }, t('level.badge', { level: xp.level })),
     h('span', { class: 'xp-bar' }, h('span', { style: `width:${percent}%` })),
-    h('span', { class: 'xp-num' }, xp.need ? `${xp.into}/${xp.need} EXP` : 'Cấp tối đa'),
+    h('span', { class: 'xp-num' }, xp.need ? `${xp.into}/${xp.need} EXP` : t('acc.maxLevel')),
   );
 }
 
@@ -175,16 +179,16 @@ function form(submitLabel, inputs, action, onDone) {
 function socialButtons() {
   const buttons = [['google', 'Google'], ['facebook', 'Facebook']].map(([name, label]) =>
     state.providers[name]
-      ? h('a', { class: `btn social ${name}`, href: `/api/auth/${name}` }, `Tiếp tục với ${label}`)
-      : h('button', { class: `btn social ${name}`, type: 'button', disabled: true, title: 'Chưa được cấu hình trên máy chủ' }, `${label} (chưa bật)`),
+      ? h('a', { class: `btn social ${name}`, href: `/api/auth/${name}` }, t('acc.continueWith', { provider: label }))
+      : h('button', { class: `btn social ${name}`, type: 'button', disabled: true, title: t('acc.providerNotConfigured') }, t('acc.providerOff', { provider: label })),
   );
   const none = !Object.values(state.providers).some(Boolean);
   return h(
     'div',
     { class: 'social-block' },
-    h('div', { class: 'divider' }, h('span', {}, 'hoặc dùng mạng xã hội')),
+    h('div', { class: 'divider' }, h('span', {}, t('acc.orSocial'))),
     h('div', { class: 'social-buttons' }, buttons),
-    none ? h('p', { class: 'hint' }, 'Đăng nhập mạng xã hội cần quản trị viên cấu hình khóa OAuth trên máy chủ (xem README).') : null,
+    none ? h('p', { class: 'hint' }, t('acc.socialHint')) : null,
   );
 }
 
@@ -195,7 +199,7 @@ function welcome(data, message) {
 }
 
 function guestView() {
-  const tabs = [['login', 'Đăng nhập'], ['register', 'Đăng ký'], ['quick', 'Chơi nhanh']];
+  const tabs = [['login', t('acc.login')], ['register', t('acc.register')], ['quick', t('acc.quick')]];
   const switcher = h(
     'div',
     { class: 'segmented', role: 'tablist' },
@@ -209,35 +213,35 @@ function guestView() {
     const email = h('input', { type: 'email', autocomplete: 'email', placeholder: 'ten@email.com', maxlength: 254, required: true });
     const password = h('input', { type: 'password', autocomplete: 'current-password', maxlength: 128, required: true });
     content = [
-      form('Đăng nhập', [field('Email', email), field('Mật khẩu', password)], () => request('/api/auth/login', { email: email.value, password: password.value }), (data) =>
-        welcome(data, (u) => `Chào mừng trở lại, ${u.name}!`),
+      form(t('acc.login'), [field('Email', email), field(t('acc.password'), password)], () => request('/api/auth/login', { email: email.value, password: password.value }), (data) =>
+        welcome(data, (u) => t('acc.welcomeBack', { name: u.name })),
       ),
       socialButtons(),
     ];
   } else if (tab === 'register') {
-    const name = h('input', { type: 'text', autocomplete: 'nickname', placeholder: 'Tên hiển thị (2–24 ký tự)', maxlength: 24, required: true });
+    const name = h('input', { type: 'text', autocomplete: 'nickname', placeholder: t('acc.namePlaceholder'), maxlength: 24, required: true });
     const email = h('input', { type: 'email', autocomplete: 'email', placeholder: 'ten@email.com', maxlength: 254, required: true });
-    const password = h('input', { type: 'password', autocomplete: 'new-password', placeholder: 'Ít nhất 8 ký tự', maxlength: 128, required: true });
+    const password = h('input', { type: 'password', autocomplete: 'new-password', placeholder: t('acc.passwordPlaceholder'), maxlength: 128, required: true });
     content = [
       form(
-        'Tạo tài khoản',
-        [field('Tên hiển thị', name), field('Email', email), field('Mật khẩu', password)],
+        t('acc.createAccount'),
+        [field(t('acc.displayName'), name), field('Email', email), field(t('acc.password'), password)],
         () => request('/api/auth/register', { name: name.value, email: email.value, password: password.value }),
-        (data) => welcome(data, (u) => `Đã tạo tài khoản, xin chào ${u.name}!`),
+        (data) => welcome(data, (u) => t('acc.created', { name: u.name })),
       ),
-      h('p', { class: 'hint' }, 'Hiện chưa xác minh email và chưa có chức năng quên mật khẩu, hãy ghi nhớ mật khẩu của bạn.'),
+      h('p', { class: 'hint' }, t('acc.noVerifyHint')),
       socialButtons(),
     ];
   } else {
-    const name = h('input', { type: 'text', autocomplete: 'nickname', placeholder: 'Biệt danh của bạn', maxlength: 24, required: true });
+    const name = h('input', { type: 'text', autocomplete: 'nickname', placeholder: t('acc.nicknamePlaceholder'), maxlength: 24, required: true });
     content = [
-      h('p', { class: 'hint' }, 'Chỉ cần một biệt danh là chơi được ngay, không cần email hay mật khẩu. Bạn có thể gắn email sau để đăng nhập lại trên thiết bị khác.'),
-      form('Vào chơi ngay', [field('Biệt danh', name)], () => request('/api/auth/quick', { name: name.value }), (data) =>
-        welcome(data, (u) => `Xin chào ${u.name}, chúc bạn chơi vui!`),
+      h('p', { class: 'hint' }, t('acc.quickHint')),
+      form(t('acc.playNow'), [field(t('acc.nickname'), name)], () => request('/api/auth/quick', { name: name.value }), (data) =>
+        welcome(data, (u) => t('acc.quickHello', { name: u.name })),
       ),
-      h('div', { class: 'divider' }, h('span', {}, 'hoặc')),
-      h('button', { class: 'btn block', type: 'button', onclick: () => dom.dialog.close() }, 'Chơi với tư cách khách'),
-      h('p', { class: 'hint' }, 'Khách vẫn chơi được mọi chế độ, chỉ không có thống kê. Nếu xóa dữ liệu trình duyệt khi chưa gắn email, tài khoản nhanh sẽ mất.'),
+      h('div', { class: 'divider' }, h('span', {}, t('acc.or'))),
+      h('button', { class: 'btn block', type: 'button', onclick: () => dom.dialog.close() }, t('acc.playAsGuest')),
+      h('p', { class: 'hint' }, t('acc.guestHint')),
     ];
   }
   return [switcher, ...content];
@@ -252,10 +256,10 @@ function profileView() {
       'div',
       { class: 'profile-head' },
       h('span', { class: 'avatar big' }, initial(user.name)),
-      h('div', {}, h('div', { class: 'profile-name' }, user.name), h('div', { class: 'hint' }, [KIND_LABEL[user.kind] ?? 'Tài khoản', user.email ? ` · ${user.email}` : ''])),
+      h('div', {}, h('div', { class: 'profile-name' }, user.name), h('div', { class: 'hint' }, [t(KIND_LABEL[user.kind] ?? 'acc.account'), user.email ? ` · ${user.email}` : ''])),
     ),
     xpLine(user.xp),
-    h('div', { class: 'label' }, 'Rating online (Glicko-2)'),
+    h('div', { class: 'label' }, t('acc.ratingTitle')),
     h(
       'div',
       { class: 'stats three' },
@@ -264,36 +268,36 @@ function profileView() {
         return stat(`${r.rating}${r.provisional ? '?' : ''}`, label);
       }),
     ),
-    h('div', { class: 'label' }, 'Thống kê chơi online'),
-    h('div', { class: 'stats' }, stat(stats.played, 'Ván'), stat(stats.wins, 'Thắng'), stat(stats.losses, 'Thua'), stat(stats.draws, 'Hòa')),
-    h('div', { class: 'label' }, 'Giải đố và thành tựu'),
+    h('div', { class: 'label' }, t('acc.onlineStats')),
+    h('div', { class: 'stats' }, stat(stats.played, t('acc.games')), stat(stats.wins, t('acc.wins')), stat(stats.losses, t('acc.losses')), stat(stats.draws, t('acc.draws'))),
+    h('div', { class: 'label' }, t('acc.puzzleAch')),
     h(
       'div',
       { class: 'stats three' },
       stat(Math.round(user.puzzle?.rating ?? 1000), 'Puzzle Rating'),
-      stat(user.puzzle?.solved ?? 0, 'Bài đã giải'),
-      stat(Object.keys(user.achievements ?? {}).length, 'Thành tựu'),
+      stat(user.puzzle?.solved ?? 0, t('acc.puzzlesSolved')),
+      stat(Object.keys(user.achievements ?? {}).length, t('acc.achievements')),
     ),
   ];
 
   if (user.kind === 'quick') {
     const email = h('input', { type: 'email', autocomplete: 'email', placeholder: 'ten@email.com', maxlength: 254, required: true });
-    const password = h('input', { type: 'password', autocomplete: 'new-password', placeholder: 'Ít nhất 8 ký tự', maxlength: 128, required: true });
+    const password = h('input', { type: 'password', autocomplete: 'new-password', placeholder: t('acc.passwordPlaceholder'), maxlength: 128, required: true });
     nodes.push(
-      h('div', { class: 'upgrade' }, h('strong', {}, 'Giữ tài khoản của bạn'), h('p', { class: 'hint' }, 'Gắn email và mật khẩu để đăng nhập lại trên thiết bị khác, kể cả khi xóa dữ liệu trình duyệt.')),
-      form('Gắn email cho tài khoản', [field('Email', email), field('Mật khẩu', password)], () => request('/api/auth/upgrade', { email: email.value, password: password.value }), (data) => {
+      h('div', { class: 'upgrade' }, h('strong', {}, t('acc.keepTitle')), h('p', { class: 'hint' }, t('acc.keepText'))),
+      form(t('acc.linkEmail'), [field('Email', email), field(t('acc.password'), password)], () => request('/api/auth/upgrade', { email: email.value, password: password.value }), (data) => {
         setUser(data.user);
         render();
-        options.toast('Đã gắn email cho tài khoản.');
+        options.toast(t('acc.emailLinked'));
       }),
     );
   }
 
-  const renameInput = h('input', { type: 'text', value: user.name, maxlength: 24, autocomplete: 'nickname', 'aria-label': 'Tên hiển thị mới' });
-  const renameForm = form('Lưu tên mới', [field('Tên hiển thị', renameInput)], () => request('/api/account/name', { name: renameInput.value }), (data) => {
+  const renameInput = h('input', { type: 'text', value: user.name, maxlength: 24, autocomplete: 'nickname', 'aria-label': t('acc.newName') });
+  const renameForm = form(t('acc.saveName'), [field(t('acc.displayName'), renameInput)], () => request('/api/account/name', { name: renameInput.value }), (data) => {
     setUser(data.user);
     render();
-    options.toast('Đã đổi tên hiển thị.');
+    options.toast(t('acc.renamed'));
   });
   renameForm.hidden = true;
 
@@ -301,29 +305,29 @@ function profileView() {
     h(
       'div',
       { class: 'account-actions' },
-      h('button', { class: 'btn', type: 'button', onclick: () => (dom.dialog.close(), options.onLeaderboard()) }, 'Bảng xếp hạng'),
-      h('button', { class: 'btn', type: 'button', onclick: () => (dom.dialog.close(), options.onAchievements()) }, 'Thành tựu'),
-      h('button', { class: 'btn', type: 'button', onclick: () => (renameForm.hidden = !renameForm.hidden) }, 'Đổi tên hiển thị'),
+      h('button', { class: 'btn', type: 'button', onclick: () => (dom.dialog.close(), options.onLeaderboard()) }, t('acc.leaderboard')),
+      h('button', { class: 'btn', type: 'button', onclick: () => (dom.dialog.close(), options.onAchievements()) }, t('acc.achievements')),
+      h('button', { class: 'btn', type: 'button', onclick: () => (renameForm.hidden = !renameForm.hidden) }, t('acc.rename')),
       h(
         'button',
         {
           class: 'btn danger-outline',
           type: 'button',
           async onclick() {
-            const answer = window.prompt('Xóa tài khoản sẽ mất toàn bộ rating, EXP, thống kê và không khôi phục được. Gõ XÓA để xác nhận:');
+            const answer = window.prompt(t('acc.deletePrompt'));
             if (answer === null) return;
             try {
               await request('/api/account/delete', { confirm: answer.trim().toUpperCase() });
               setUser(null);
               tab = 'login';
               dom.dialog.close();
-              options.toast('Đã xóa tài khoản.');
+              options.toast(t('acc.deleted'));
             } catch (e) {
               options.toast(e.message);
             }
           },
         },
-        'Xóa tài khoản',
+        t('acc.delete'),
       ),
     ),
     renameForm,
@@ -341,17 +345,17 @@ function profileView() {
           setUser(null);
           tab = 'login';
           dom.dialog.close();
-          options.toast('Đã đăng xuất.');
+          options.toast(t('acc.loggedOut'));
         },
       },
-      'Đăng xuất',
+      t('acc.logout'),
     ),
   );
   return nodes;
 }
 
 function render() {
-  dom.title.textContent = state.user ? 'Tài khoản' : tab === 'quick' ? 'Chơi nhanh' : tab === 'register' ? 'Đăng ký' : 'Đăng nhập';
+  dom.title.textContent = state.user ? t('acc.account') : tab === 'quick' ? t('acc.quick') : tab === 'register' ? t('acc.register') : t('acc.login');
   dom.body.replaceChildren(...(state.user ? profileView() : guestView()));
 }
 
@@ -372,8 +376,8 @@ function handleLoginRedirect() {
   params.delete('login_error');
   const rest = params.toString();
   history.replaceState(null, '', location.pathname + (rest ? `?${rest}` : ''));
-  if (error) options.toast(LOGIN_ERRORS[error] ?? LOGIN_ERRORS.failed);
-  else options.toast(`Đăng nhập thành công${state.user ? `, xin chào ${state.user.name}!` : '.'}`);
+  if (error) options.toast(t(LOGIN_ERRORS[error] ?? LOGIN_ERRORS.failed));
+  else options.toast(state.user ? t('acc.loginOkName', { name: state.user.name }) : t('acc.loginOk'));
 }
 
 export async function initAccount({ button, banner, dialog, onChange, toast, onLeaderboard, onAchievements }) {
@@ -388,4 +392,12 @@ export async function initAccount({ button, banner, dialog, onChange, toast, onL
   renderBanner();
   await refreshAccount();
   handleLoginRedirect();
+}
+
+// Vẽ lại phần tài khoản sau khi đổi ngôn ngữ.
+export function rerenderAccount() {
+  if (!dom.button) return;
+  renderButton();
+  renderBanner();
+  if (dom.dialog.open) render();
 }

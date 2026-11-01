@@ -1,4 +1,5 @@
 // Thành tựu: định nghĩa (dùng chung với máy chủ để kiểm tra mã hợp lệ) và cách chấm sau mỗi ván / mỗi bài giải đố.
+// Tên và mô tả hiển thị lấy từ bản dịch (khóa ach.<id>.name / ach.<id>.desc); chữ tiếng Việt ở đây để tiện đọc mã.
 // Sự kiện "game": { mode, outcome: 'win'|'lose'|'draw'|null, reason, moves, me: 'w'|'b'|null, level, rated, view3d }
 // Sự kiện "puzzle": { solved, streak, rating, totalSolved }
 
@@ -6,33 +7,33 @@ const PIECE_VALUE = { P: 1, N: 3, B: 3, R: 5, Q: 9, K: 0 };
 
 export const ACHIEVEMENTS = [
   // Ván cờ
-  { id: 'first_game', icon: '♟', name: 'Nước đi đầu tiên', desc: 'Chơi xong một ván cờ.', points: 10, group: 'Ván cờ' },
-  { id: 'games_10', icon: '🎯', name: 'Chăm chỉ', desc: 'Chơi xong 10 ván.', points: 15, group: 'Ván cờ', goal: { key: 'games', value: 10 } },
-  { id: 'games_50', icon: '🏅', name: 'Kỳ thủ bền bỉ', desc: 'Chơi xong 50 ván.', points: 30, group: 'Ván cờ', goal: { key: 'games', value: 50 } },
-  { id: 'first_win', icon: '🥇', name: 'Chiến thắng đầu tiên', desc: 'Thắng một ván với máy hoặc online.', points: 10, group: 'Ván cờ' },
-  { id: 'bot_5', icon: '🤖', name: 'Vượt cấp 5', desc: 'Thắng máy từ cấp 5 trở lên.', points: 20, group: 'Ván cờ' },
-  { id: 'bot_9', icon: '🦾', name: 'Hạ máy giỏi', desc: 'Thắng máy từ cấp 9 trở lên.', points: 40, group: 'Ván cờ' },
-  { id: 'bot_12', icon: '👑', name: 'Chinh phục Chuyên gia', desc: 'Thắng máy cấp 12.', points: 100, group: 'Ván cờ' },
-  { id: 'online_win', icon: '🌐', name: 'Thắng online', desc: 'Thắng một ván online.', points: 20, group: 'Ván cờ' },
-  { id: 'rated_win', icon: '📈', name: 'Leo hạng', desc: 'Thắng một ván online có tính điểm.', points: 25, group: 'Ván cờ' },
-  { id: 'local_game', icon: '🤝', name: 'Bạn cờ', desc: 'Chơi xong một ván hai người trên một máy.', points: 10, group: 'Ván cờ' },
-  { id: 'view_3d', icon: '🧊', name: 'Ba chiều', desc: 'Chơi xong một ván ở chế độ 3D.', points: 10, group: 'Ván cờ' },
+  { id: 'first_game', icon: '♟', name: 'Nước đi đầu tiên', desc: 'Chơi xong một ván cờ.', points: 10, group: 'game' },
+  { id: 'games_10', icon: '🎯', name: 'Chăm chỉ', desc: 'Chơi xong 10 ván.', points: 15, group: 'game', goal: { key: 'games', value: 10 } },
+  { id: 'games_50', icon: '🏅', name: 'Kỳ thủ bền bỉ', desc: 'Chơi xong 50 ván.', points: 30, group: 'game', goal: { key: 'games', value: 50 } },
+  { id: 'first_win', icon: '🥇', name: 'Chiến thắng đầu tiên', desc: 'Thắng một ván với máy hoặc online.', points: 10, group: 'game' },
+  { id: 'bot_5', icon: '🤖', name: 'Vượt cấp 5', desc: 'Thắng máy từ cấp 5 trở lên.', points: 20, group: 'game' },
+  { id: 'bot_9', icon: '🦾', name: 'Hạ máy giỏi', desc: 'Thắng máy từ cấp 9 trở lên.', points: 40, group: 'game' },
+  { id: 'bot_12', icon: '👑', name: 'Chinh phục Chuyên gia', desc: 'Thắng máy cấp 12.', points: 100, group: 'game' },
+  { id: 'online_win', icon: '🌐', name: 'Thắng online', desc: 'Thắng một ván online.', points: 20, group: 'game' },
+  { id: 'rated_win', icon: '📈', name: 'Leo hạng', desc: 'Thắng một ván online có tính điểm.', points: 25, group: 'game' },
+  { id: 'local_game', icon: '🤝', name: 'Bạn cờ', desc: 'Chơi xong một ván hai người trên một máy.', points: 10, group: 'game' },
+  { id: 'view_3d', icon: '🧊', name: 'Ba chiều', desc: 'Chơi xong một ván ở chế độ 3D.', points: 10, group: 'game' },
   // Kỹ thuật
-  { id: 'castle', icon: '🏰', name: 'Nhập thành', desc: 'Nhập thành trong một ván.', points: 10, group: 'Kỹ thuật' },
-  { id: 'en_passant', icon: '👻', name: 'Bắt tốt qua đường', desc: 'Bắt tốt qua đường (en passant).', points: 15, group: 'Kỹ thuật' },
-  { id: 'underpromotion', icon: '🐴', name: 'Phong cấp lạ', desc: 'Phong cấp thành Xe, Tượng hoặc Mã.', points: 25, group: 'Kỹ thuật' },
-  { id: 'knight_mate', icon: '♞', name: 'Kỵ sĩ kết liễu', desc: 'Chiếu hết bằng quân Mã.', points: 25, group: 'Kỹ thuật' },
-  { id: 'quick_mate', icon: '⚡', name: 'Tốc chiến', desc: 'Thắng bằng chiếu hết trong 20 nước.', points: 25, group: 'Kỹ thuật' },
-  { id: 'clean_win', icon: '🛡', name: 'Bất khả xâm phạm', desc: 'Thắng mà không bị mất quân nào.', points: 40, group: 'Kỹ thuật' },
-  { id: 'comeback', icon: '🔥', name: 'Lội ngược dòng', desc: 'Thắng sau khi từng kém từ 5 điểm quân trở lên.', points: 40, group: 'Kỹ thuật', hidden: true },
-  { id: 'time_win', icon: '⏱', name: 'Thắng trên đồng hồ', desc: 'Thắng vì đối phương hết giờ.', points: 15, group: 'Kỹ thuật' },
-  { id: 'marathon', icon: '🏃', name: 'Ván cờ marathon', desc: 'Chơi xong một ván dài từ 80 nước trở lên.', points: 15, group: 'Kỹ thuật' },
+  { id: 'castle', icon: '🏰', name: 'Nhập thành', desc: 'Nhập thành trong một ván.', points: 10, group: 'technique' },
+  { id: 'en_passant', icon: '👻', name: 'Bắt tốt qua đường', desc: 'Bắt tốt qua đường (en passant).', points: 15, group: 'technique' },
+  { id: 'underpromotion', icon: '🐴', name: 'Phong cấp lạ', desc: 'Phong cấp thành Xe, Tượng hoặc Mã.', points: 25, group: 'technique' },
+  { id: 'knight_mate', icon: '♞', name: 'Kỵ sĩ kết liễu', desc: 'Chiếu hết bằng quân Mã.', points: 25, group: 'technique' },
+  { id: 'quick_mate', icon: '⚡', name: 'Tốc chiến', desc: 'Thắng bằng chiếu hết trong 20 nước.', points: 25, group: 'technique' },
+  { id: 'clean_win', icon: '🛡', name: 'Bất khả xâm phạm', desc: 'Thắng mà không bị mất quân nào.', points: 40, group: 'technique' },
+  { id: 'comeback', icon: '🔥', name: 'Lội ngược dòng', desc: 'Thắng sau khi từng kém từ 5 điểm quân trở lên.', points: 40, group: 'technique', hidden: true },
+  { id: 'time_win', icon: '⏱', name: 'Thắng trên đồng hồ', desc: 'Thắng vì đối phương hết giờ.', points: 15, group: 'technique' },
+  { id: 'marathon', icon: '🏃', name: 'Ván cờ marathon', desc: 'Chơi xong một ván dài từ 80 nước trở lên.', points: 15, group: 'technique' },
   // Giải đố
-  { id: 'puzzle_1', icon: '🧩', name: 'Nhà giải đố', desc: 'Giải đúng bài giải đố đầu tiên.', points: 10, group: 'Giải đố' },
-  { id: 'puzzle_25', icon: '🧠', name: 'Óc chiến thuật', desc: 'Giải đúng 25 bài giải đố.', points: 30, group: 'Giải đố', goal: { key: 'puzzles', value: 25 } },
-  { id: 'puzzle_streak_5', icon: '🎇', name: 'Chuỗi 5', desc: 'Giải đúng 5 bài liên tiếp.', points: 25, group: 'Giải đố' },
-  { id: 'puzzle_1400', icon: '💡', name: 'Puzzle 1400', desc: 'Đạt Puzzle Rating 1400.', points: 30, group: 'Giải đố' },
-  { id: 'puzzle_1800', icon: '💎', name: 'Puzzle 1800', desc: 'Đạt Puzzle Rating 1800.', points: 60, group: 'Giải đố' },
+  { id: 'puzzle_1', icon: '🧩', name: 'Nhà giải đố', desc: 'Giải đúng bài giải đố đầu tiên.', points: 10, group: 'puzzle' },
+  { id: 'puzzle_25', icon: '🧠', name: 'Óc chiến thuật', desc: 'Giải đúng 25 bài giải đố.', points: 30, group: 'puzzle', goal: { key: 'puzzles', value: 25 } },
+  { id: 'puzzle_streak_5', icon: '🎇', name: 'Chuỗi 5', desc: 'Giải đúng 5 bài liên tiếp.', points: 25, group: 'puzzle' },
+  { id: 'puzzle_1400', icon: '💡', name: 'Puzzle 1400', desc: 'Đạt Puzzle Rating 1400.', points: 30, group: 'puzzle' },
+  { id: 'puzzle_1800', icon: '💎', name: 'Puzzle 1800', desc: 'Đạt Puzzle Rating 1800.', points: 60, group: 'puzzle' },
 ];
 
 export const ACHIEVEMENT_IDS = new Set(ACHIEVEMENTS.map((a) => a.id));

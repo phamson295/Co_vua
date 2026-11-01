@@ -40,6 +40,21 @@ Mở **Giao diện** (biểu tượng bánh răng ở góc trên, hoặc trong m
 - **2D / 3D**: 2D phẳng có hoạt ảnh trượt quân. 3D là bàn cờ dựng thật bằng Three.js, có chất liệu, bóng đổ, kéo để xoay góc nhìn, chụm hai ngón để phóng to thu nhỏ, và nút "Đặt lại góc nhìn". Kiểu quân Cổ điển/Hiện đại cũng áp dụng cho quân 3D.
 - **Màu giao diện**: Tự động theo hệ thống, Sáng, Tối.
 - Âm thanh, gợi ý ô có thể đi, tọa độ trên bàn 2D, cách ngồi khi chơi hai người.
+- **Hoạt ảnh chibi khi chiếu tướng** (bật/tắt trong Giao diện): một nhân vật chibi bật ra giữa màn hình kèm bong bóng "Chiếu!" hoặc "Chiếu hết!". Mỗi loại quân có hình riêng (Tốt đội mũ sắt, Mã có bờm, Tượng đội mũ nhọn, Xe hình tháp, Hậu và Vua đội vương miện), màu theo bên đang chiếu. Nếu là chiếu mở hoặc chiếu đôi, hình là quân mạnh nhất đang chiếu.
+
+## Ngôn ngữ
+
+Bấm nút cờ quốc gia ở góc trên (hoặc **Giao diện → Ngôn ngữ**) để chọn 1 trong 20 ngôn ngữ: Tiếng Việt, English, 中文, 日本語, 한국어, ไทย, Bahasa Indonesia, Bahasa Melayu, हिन्दी, Español, Português, Français, Deutsch, Italiano, Русский, Türkçe, العربية, Polski, Nederlands, Українська.
+
+- Lần đầu mở, trò chơi tự chọn theo ngôn ngữ của trình duyệt (không có thì dùng tiếng Việt); lựa chọn được ghi nhớ.
+- Tiếng Ả Rập hiển thị từ phải sang trái, riêng bàn cờ, đồng hồ và danh sách nước đi giữ nguyên chiều.
+- Cờ quốc gia vẽ bằng SVG để hiển thị đúng cả trên Windows (emoji cờ không hiện trên Windows).
+- Từ điển nằm ở `public/i18n/<mã>.json`. Thiếu chữ nào thì lấy tiếng Anh, rồi tiếng Việt. Bài kiểm thử `tests/i18n.test.js` bảo đảm mọi ngôn ngữ đủ khóa và giữ đúng các biến `{...}`.
+- **Lưu ý:** bản dịch (trừ tiếng Việt) được soạn với sự hỗ trợ của máy, chưa có người bản ngữ rà soát; có thể còn chỗ chưa tự nhiên.
+
+## Trang giới thiệu & luật cờ
+
+Mở bằng liên kết **Giới thiệu & luật cờ** ở cuối menu. Trang gồm: giới thiệu các chế độ chơi; bàn cờ và mục tiêu; cách đi của từng quân (có sơ đồ minh họa); nhập thành, bắt tốt qua đường, phong cấp; chiếu, chiếu hết, hết nước đi; các trường hợp hòa; đồng hồ và ký hiệu nước đi; mẹo cho người mới. Toàn bộ nội dung có đủ 20 ngôn ngữ.
 
 ## Tài khoản
 
@@ -144,6 +159,10 @@ scripts/
   js/board3d.js            Bàn cờ 3D bằng Three.js (chỉ nạp khi chọn 3D)
   js/sound.js              Âm thanh tạo bằng Web Audio
   js/account.js            Giao diện đăng nhập, đăng ký, chơi nhanh, hồ sơ
+  js/i18n.js               Đa ngôn ngữ: nạp từ điển, hàm t(), dịch các phần tử data-i18n
+  js/languages.js          Danh sách 20 ngôn ngữ và cờ quốc gia (SVG)
+  js/chibi.js              Nhân vật chibi và hoạt ảnh khi chiếu tướng
+  i18n/*.json              Từ điển của 20 ngôn ngữ
   vendor/                  Three.js 0.160.0 và OrbitControls (giấy phép MIT: THREE-LICENSE.txt)
 tests/
   engine.test.js           Kiểm thử luật bằng perft (đếm nước đi chuẩn), ký hiệu SAN và các trường hợp kết thúc ván
@@ -151,6 +170,7 @@ tests/
   auth.test.js             Kiểm thử tài khoản, OAuth (máy chủ giả lập), tên người chơi và thống kê online
   online.test.js           Kiểm thử online: đồng hồ, hết giờ, xin hòa, tái đấu, nối lại, bỏ ván, xếp hạng, EXP, chat
   shared.test.js           Kiểm thử đồng hồ, Glicko-2, Elo luyện tập, EXP
+  i18n.test.js             Kiểm tra 20 bản dịch đủ khóa, đúng biến; hình chibi cho mọi quân
   features.test.js         Kiểm chứng từng bài giải đố, thành tựu, ghép trận, API giải đố/thành tựu/tài khoản
 ```
 
@@ -184,4 +204,5 @@ Gói miễn phí của Render sẽ tạm ngủ sau một thời gian không có 
 - Chat chỉ có câu soạn sẵn (không gõ tự do), để không phải kiểm duyệt nội dung.
 - Elo luyện tập lưu trên từng thiết bị, chưa đồng bộ giữa các máy.
 - Chế độ 3D cần trình duyệt hỗ trợ WebGL; nếu không, ứng dụng tự quay về 2D. Quân 3D là hình khối dựng bằng hình học, chưa phải mô hình chạm khắc chi tiết.
+- Bản dịch ngoài tiếng Việt chưa được người bản ngữ rà soát. Thông báo lỗi trong nhật ký máy chủ vẫn bằng tiếng Việt (người chơi thấy thông báo đã dịch).
 - Chưa kiểm thử trên nhiều loại điện thoại thật; hiệu năng 3D phụ thuộc cấu hình máy.

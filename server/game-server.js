@@ -171,7 +171,7 @@ export function attachGameServer({ server, auth, store, clockScale = 1, graceMs 
   }
 
   function createRoom(ws, msg) {
-    if (ws.room) return send(ws, { type: 'error', message: 'Bạn đang ở trong một phòng khác.' });
+    if (ws.room) return send(ws, { type: 'error', code: 'inRoom', message: 'Bạn đang ở trong một phòng khác.' });
     cancelSeek(ws);
     const room = newRoom(ws, findTimeControl(String(msg.tc ?? 'none')), msg.rated !== false);
     send(ws, { type: 'room', token: room.players.w.token, ...roomInfo(room), rated: room.rated });
@@ -182,7 +182,7 @@ export function attachGameServer({ server, auth, store, clockScale = 1, graceMs 
   const searchWindow = (entry, now) => Math.min(500, 100 + (20 * (now - entry.since)) / 1000);
 
   function seek(ws, msg) {
-    if (ws.room) return send(ws, { type: 'error', message: 'Bạn đang ở trong một phòng khác.' });
+    if (ws.room) return send(ws, { type: 'error', code: 'inRoom', message: 'Bạn đang ở trong một phòng khác.' });
     cancelSeek(ws);
     const tc = findTimeControl(String(msg.tc ?? '5+0'));
     const user = ws.user ? store.getUser(ws.user.id) : null;
@@ -222,9 +222,9 @@ export function attachGameServer({ server, auth, store, clockScale = 1, graceMs 
 
   function joinRoom(ws, code) {
     const room = rooms.get(code);
-    if (ws.room) return send(ws, { type: 'error', message: 'Bạn đang ở trong một phòng khác.' });
-    if (!room) return send(ws, { type: 'error', message: 'Không tìm thấy phòng với mã này.' });
-    if (room.status !== 'waiting' || room.players.b) return send(ws, { type: 'error', message: 'Phòng đã đủ người.' });
+    if (ws.room) return send(ws, { type: 'error', code: 'inRoom', message: 'Bạn đang ở trong một phòng khác.' });
+    if (!room) return send(ws, { type: 'error', code: 'roomNotFound', message: 'Không tìm thấy phòng với mã này.' });
+    if (room.status !== 'waiting' || room.players.b) return send(ws, { type: 'error', code: 'roomFull', message: 'Phòng đã đủ người.' });
     room.players.b = makeSlot(ws);
     attach(ws, room, 'b');
     startGame(room);
@@ -233,7 +233,7 @@ export function attachGameServer({ server, auth, store, clockScale = 1, graceMs 
   function rejoin(ws, code, token) {
     const room = rooms.get(code);
     const color = room && ['w', 'b'].find((c) => room.players[c]?.token === token);
-    if (!room || !color) return send(ws, { type: 'rejoin_failed', message: 'Phòng không còn tồn tại.' });
+    if (!room || !color) return send(ws, { type: 'rejoin_failed', code: 'roomGone', message: 'Phòng không còn tồn tại.' });
     const slot = room.players[color];
     if (slot.ws && slot.ws !== ws) {
       const old = slot.ws;
@@ -264,12 +264,12 @@ export function attachGameServer({ server, auth, store, clockScale = 1, graceMs 
 
   function playMove(ws, msg) {
     const room = ws.room;
-    if (!room || room.status !== 'playing') return send(ws, { type: 'error', message: 'Ván cờ chưa bắt đầu hoặc đã kết thúc.' });
-    if (room.game.turn !== ws.color) return send(ws, { type: 'error', message: 'Chưa đến lượt bạn.' });
+    if (!room || room.status !== 'playing') return send(ws, { type: 'error', code: 'notPlaying', message: 'Ván cờ chưa bắt đầu hoặc đã kết thúc.' });
+    if (room.game.turn !== ws.color) return send(ws, { type: 'error', code: 'notYourTurn', message: 'Chưa đến lượt bạn.' });
     if (room.clock && room.clock.remaining(ws.color, Date.now()) <= 0) return; // hết giờ: chờ bộ hẹn giờ xử thua
 
     const move = room.game.play(Number(msg.from), Number(msg.to), msg.promo ?? null);
-    if (!move) return send(ws, { type: 'error', message: 'Nước đi không hợp lệ.' });
+    if (!move) return send(ws, { type: 'error', code: 'badMove', message: 'Nước đi không hợp lệ.' });
     if (room.clock) room.clock.press(ws.color, Date.now());
     if (room.drawOffer) room.drawOffer = null; // đi nước tiếp coi như từ chối lời mời hòa
     const status = room.game.status();
@@ -280,7 +280,7 @@ export function attachGameServer({ server, auth, store, clockScale = 1, graceMs 
 
   function resign(ws) {
     const room = ws.room;
-    if (!room || room.status !== 'playing') return send(ws, { type: 'error', message: 'Không thể đầu hàng lúc này.' });
+    if (!room || room.status !== 'playing') return send(ws, { type: 'error', code: 'cannotResign', message: 'Không thể đầu hàng lúc này.' });
     finish(room, other(ws.color), 'resign');
   }
 
@@ -305,7 +305,7 @@ export function attachGameServer({ server, auth, store, clockScale = 1, graceMs 
     const room = ws.room;
     if (!room || room.status !== 'over') return;
     if (!room.players[other(ws.color)]?.connected) {
-      return send(ws, { type: 'error', message: 'Đối thủ đã rời phòng.' });
+      return send(ws, { type: 'error', code: 'opponentLeft', message: 'Đối thủ đã rời phòng.' });
     }
     room.rematch.add(ws.color);
     if (room.rematch.size < 2) return sendTo(room, other(ws.color), { type: 'rematch_offer' });
@@ -367,7 +367,7 @@ export function attachGameServer({ server, auth, store, clockScale = 1, graceMs 
       try {
         msg = JSON.parse(raw);
       } catch {
-        return send(ws, { type: 'error', message: 'Dữ liệu không hợp lệ.' });
+        return send(ws, { type: 'error', code: 'badData', message: 'Dữ liệu không hợp lệ.' });
       }
       switch (msg.type) {
         case 'create': return createRoom(ws, msg);
@@ -385,7 +385,7 @@ export function attachGameServer({ server, auth, store, clockScale = 1, graceMs 
         case 'rematch': return rematch(ws);
         case 'chat': return chat(ws, msg);
         case 'leave': return leave(ws, { immediate: true });
-        default: return send(ws, { type: 'error', message: 'Lệnh không hợp lệ.' });
+        default: return send(ws, { type: 'error', code: 'badCommand', message: 'Lệnh không hợp lệ.' });
       }
     });
     ws.on('close', () => {

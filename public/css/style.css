@@ -902,3 +902,129 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 28px; }
 /* ---------- Tài khoản: thao tác ---------- */
 .account-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .btn.danger-outline { color: var(--danger); border-color: var(--danger-soft); }
+
+/* ---------- Ngôn ngữ ---------- */
+.flag { width: 26px; height: 17px; border-radius: 3px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18); display: block; flex: none; }
+.lang-btn .flag { width: 24px; height: 16px; }
+.lang-row { display: flex; align-items: center; gap: 10px; justify-content: flex-start; }
+.lang-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.lang-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: var(--surface-2);
+  font-weight: 650;
+  text-align: start;
+}
+.lang-item:hover { border-color: var(--accent-soft); }
+.lang-item[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
+
+/* Tiếng Ả Rập (viết từ phải sang trái): bàn cờ, nước đi, đồng hồ vẫn giữ trái sang phải */
+[dir="rtl"] .board, [dir="rtl"] .moves, [dir="rtl"] .clock, [dir="rtl"] .room-code, [dir="rtl"] .board3d { direction: ltr; }
+[dir="rtl"] .moves .m { text-align: left; }
+
+/* ---------- Trang giới thiệu và luật cờ ---------- */
+.about { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.about-hero { text-align: center; padding: 6px 0 4px; }
+.about-hero h2 { margin: 0 0 8px; font-size: clamp(1.6rem, 5vw, 2.2rem); }
+.about-hero p { margin: 0 auto; max-width: 640px; color: var(--muted); line-height: 1.55; }
+.about-toc { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 14px; }
+.about-toc a {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+.about-toc a:hover { border-color: var(--accent); }
+.about-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+  line-height: 1.6;
+  scroll-margin-top: 12px;
+}
+.about-card h3 { margin: 0 0 10px; font-size: 1.2rem; }
+.about-card h4 { margin: 14px 0 4px; color: var(--accent); }
+.about-card p { margin: 0 0 8px; }
+.feature-list { margin: 0; padding-inline-start: 20px; display: flex; flex-direction: column; gap: 6px; }
+.feature-list li::marker { color: var(--accent); }
+.piece-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-bottom: 10px; }
+.piece-card { background: var(--surface-2); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.piece-card p { margin: 0; font-size: 0.92rem; }
+.piece-card-head { display: flex; align-items: center; gap: 10px; font-size: 1.05rem; }
+.piece-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--light-sq), var(--dark-sq)); display: flex; align-items: center; justify-content: center; }
+.piece-icon .pcv { width: 84%; height: 84%; }
+.diagram-wrap { position: relative; width: 100%; max-width: 210px; aspect-ratio: 1; margin: 0 auto; border-radius: 8px; overflow: hidden; border: 4px solid var(--frame); }
+.move-diagram { display: block; width: 100%; height: 100%; }
+.diagram-piece { position: absolute; width: calc(100% / 7); height: calc(100% / 7); display: flex; align-items: center; justify-content: center; }
+.diagram-piece .pcv { width: 92%; height: 92%; }
+.about-actions { max-width: 420px; margin: 4px auto 0; width: 100%; }
+
+/* ---------- Hoạt ảnh chibi khi chiếu tướng ---------- */
+.check-fx {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.18), transparent 60%);
+}
+.fx-wrap { position: relative; display: flex; flex-direction: column; align-items: center; animation: fx-pop 1.5s ease forwards; }
+.fx-wrap.mate { animation-duration: 2.3s; }
+.fx-chibi { width: min(48vw, 230px); filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.35)); animation: fx-bounce 0.36s ease-in-out 0.25s 3 alternate; }
+.chibi { display: block; width: 100%; height: auto; }
+.fx-bubble {
+  order: -1;
+  margin-bottom: -8px;
+  padding: 8px 22px;
+  border-radius: 999px;
+  background: #e5484d;
+  color: #fff;
+  font-weight: 900;
+  font-size: clamp(1.7rem, 8vw, 2.8rem);
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 24px rgba(229, 72, 77, 0.45);
+  transform: rotate(-6deg);
+  animation: fx-shake 0.32s ease 0.3s 3;
+  white-space: nowrap;
+}
+.fx-wrap.mate .fx-bubble { background: linear-gradient(135deg, #f6c443, #e08a1e); color: #2b1a00; text-shadow: none; box-shadow: 0 8px 28px rgba(240, 170, 40, 0.55); }
+.fx-burst { position: absolute; left: 50%; top: 55%; width: 0; height: 0; }
+.fx-burst i {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin: -7px;
+  background: #ffd84d;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  transform: rotate(var(--a)) translateY(0) scale(0.3);
+  opacity: 0;
+  animation: fx-spark 0.9s ease-out calc(0.12s + var(--d)) forwards;
+}
+.fx-wrap.mate .fx-burst i { background: #ff6b8b; animation-iteration-count: 2; }
+@keyframes fx-pop {
+  0% { transform: scale(0.2) rotate(-12deg); opacity: 0; }
+  14% { transform: scale(1.15) rotate(4deg); opacity: 1; }
+  24% { transform: scale(1) rotate(0); }
+  82% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.9) translateY(-24px); opacity: 0; }
+}
+@keyframes fx-bounce { from { transform: translateY(0); } to { transform: translateY(-14px); } }
+@keyframes fx-shake { 0%, 100% { transform: rotate(-6deg); } 33% { transform: rotate(-11deg) scale(1.06); } 66% { transform: rotate(-1deg); } }
+@keyframes fx-spark {
+  0% { opacity: 0; transform: rotate(var(--a)) translateY(0) scale(0.3); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(-150px) scale(1); }
+}

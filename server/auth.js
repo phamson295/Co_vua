@@ -38,30 +38,32 @@ const PROVIDERS = {
 };
 
 class HttpError extends Error {
-  constructor(status, message) {
+  // code: mã lỗi để trình duyệt hiển thị theo ngôn ngữ của người dùng
+  constructor(status, message, code) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
 function cleanName(value) {
   const name = String(value ?? '').replace(/\s+/g, ' ').trim();
   const length = [...name].length;
-  if (length < 2 || length > 24) throw new HttpError(400, 'Tên hiển thị cần từ 2 đến 24 ký tự.');
-  if (/[\u0000-\u001f\u007f<>]/.test(name)) throw new HttpError(400, 'Tên hiển thị chứa ký tự không hợp lệ.');
+  if (length < 2 || length > 24) throw new HttpError(400, 'Tên hiển thị cần từ 2 đến 24 ký tự.', 'badNameLength');
+  if (/[\u0000-\u001f\u007f<>]/.test(name)) throw new HttpError(400, 'Tên hiển thị chứa ký tự không hợp lệ.', 'badNameChars');
   return name;
 }
 
 function cleanEmail(value) {
   const email = String(value ?? '').trim().toLowerCase();
-  if (email.length > 254 || !EMAIL_PATTERN.test(email)) throw new HttpError(400, 'Email không hợp lệ.');
+  if (email.length > 254 || !EMAIL_PATTERN.test(email)) throw new HttpError(400, 'Email không hợp lệ.', 'badEmail');
   return email;
 }
 
 function cleanPassword(value) {
   const password = String(value ?? '');
-  if (password.length < 8) throw new HttpError(400, 'Mật khẩu cần ít nhất 8 ký tự.');
-  if (password.length > 128) throw new HttpError(400, 'Mật khẩu quá dài (tối đa 128 ký tự).');
+  if (password.length < 8) throw new HttpError(400, 'Mật khẩu cần ít nhất 8 ký tự.', 'passwordShort');
+  if (password.length > 128) throw new HttpError(400, 'Mật khẩu quá dài (tối đa 128 ký tự).', 'passwordLong');
   return password;
 }
 
@@ -123,19 +125,19 @@ function redirect(res, location) {
 
 async function readJson(req) {
   if (!/^application\/json/i.test(req.headers['content-type'] ?? '')) {
-    throw new HttpError(415, 'Cần gửi dữ liệu dạng JSON.');
+    throw new HttpError(415, 'Cần gửi dữ liệu dạng JSON.', 'needJson');
   }
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > 4096) throw new HttpError(413, 'Dữ liệu gửi lên quá lớn.');
+    if (size > 4096) throw new HttpError(413, 'Dữ liệu gửi lên quá lớn.', 'tooLarge');
     chunks.push(chunk);
   }
   try {
     return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
   } catch {
-    throw new HttpError(400, 'Dữ liệu JSON không hợp lệ.');
+    throw new HttpError(400, 'Dữ liệu JSON không hợp lệ.', 'badJson');
   }
 }
 
@@ -222,7 +224,7 @@ export function createAuth({ store, env = process.env }) {
     } catch {
       // Giá trị Origin không đọc được: coi như không hợp lệ.
     }
-    if (host !== req.headers.host) throw new HttpError(403, 'Nguồn gửi yêu cầu không hợp lệ.');
+    if (host !== req.headers.host) throw new HttpError(403, 'Nguồn gửi yêu cầu không hợp lệ.', 'badOrigin');
   }
 
   function provider(name) {
@@ -250,12 +252,12 @@ export function createAuth({ store, env = process.env }) {
 
   // ----- Email -----
   async function register(req, res) {
-    if (limited(`register:${clientIp(req)}`, 10, 3600 * 1000)) throw new HttpError(429, 'Bạn đăng ký quá nhiều lần, hãy thử lại sau.');
+    if (limited(`register:${clientIp(req)}`, 10, 3600 * 1000)) throw new HttpError(429, 'Bạn đăng ký quá nhiều lần, hãy thử lại sau.', 'tooManyRegistrations');
     const body = await readJson(req);
     const name = cleanName(body.name);
     const email = cleanEmail(body.email);
     const password = cleanPassword(body.password);
-    if (store.findByEmail(email)) throw new HttpError(409, 'Email này đã được đăng ký.');
+    if (store.findByEmail(email)) throw new HttpError(409, 'Email này đã được đăng ký.', 'emailTaken');
     const user = store.createUser({ kind: 'email', name, loginEmail: email, passwordHash: await hashPassword(password) });
     startSession(req, res, user);
     json(res, 201, { user: publicUser(user) });
@@ -266,19 +268,19 @@ export function createAuth({ store, env = process.env }) {
     const email = String(body.email ?? '').trim().toLowerCase();
     const password = String(body.password ?? '').slice(0, 128);
     if (limited(`login:${clientIp(req)}`, 20, 15 * 60 * 1000) || limited(`login:${email}`, 8, 15 * 60 * 1000)) {
-      throw new HttpError(429, 'Bạn thử đăng nhập quá nhiều lần, hãy chờ vài phút rồi thử lại.');
+      throw new HttpError(429, 'Bạn thử đăng nhập quá nhiều lần, hãy chờ vài phút rồi thử lại.', 'tooManyLogins');
     }
     const user = store.findByEmail(email);
     dummyHash ??= await hashPassword('mat-khau-gia-de-can-bang-thoi-gian');
     const ok = await verifyPassword(password, user ? user.passwordHash : dummyHash);
-    if (!user || !ok) throw new HttpError(401, 'Email hoặc mật khẩu không đúng.');
+    if (!user || !ok) throw new HttpError(401, 'Email hoặc mật khẩu không đúng.', 'badCredentials');
     startSession(req, res, user);
     json(res, 200, { user: publicUser(user) });
   }
 
   // ----- Tài khoản nhanh: chỉ cần biệt danh -----
   async function quick(req, res) {
-    if (limited(`quick:${clientIp(req)}`, 20, 3600 * 1000)) throw new HttpError(429, 'Bạn tạo quá nhiều tài khoản, hãy thử lại sau.');
+    if (limited(`quick:${clientIp(req)}`, 20, 3600 * 1000)) throw new HttpError(429, 'Bạn tạo quá nhiều tài khoản, hãy thử lại sau.', 'tooManyAccounts');
     const body = await readJson(req);
     const user = store.createUser({ kind: 'quick', name: cleanName(body.name) });
     startSession(req, res, user);
@@ -288,12 +290,12 @@ export function createAuth({ store, env = process.env }) {
   // Gắn email + mật khẩu cho tài khoản nhanh để đăng nhập lại được trên thiết bị khác.
   async function upgrade(req, res) {
     const user = userFromRequest(req);
-    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.');
-    if (user.kind !== 'quick') throw new HttpError(400, 'Chỉ tài khoản nhanh mới cần nâng cấp.');
+    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.', 'notLoggedIn');
+    if (user.kind !== 'quick') throw new HttpError(400, 'Chỉ tài khoản nhanh mới cần nâng cấp.', 'onlyQuickUpgrade');
     const body = await readJson(req);
     const email = cleanEmail(body.email);
     const password = cleanPassword(body.password);
-    if (store.findByEmail(email)) throw new HttpError(409, 'Email này đã được đăng ký.');
+    if (store.findByEmail(email)) throw new HttpError(409, 'Email này đã được đăng ký.', 'emailTaken');
     store.setCredentials(user, email, await hashPassword(password));
     json(res, 200, { user: publicUser(user) });
   }
@@ -301,25 +303,25 @@ export function createAuth({ store, env = process.env }) {
   // ----- Tiến trình: EXP từ ván đấu với Bot (máy người chơi báo về, có trần mỗi ngày) -----
   async function botProgress(req, res) {
     const user = userFromRequest(req);
-    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.');
-    if (limited(`bot:${user.id}`, 120, 3600 * 1000)) throw new HttpError(429, 'Gửi kết quả quá nhanh, hãy thử lại sau.');
+    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.', 'notLoggedIn');
+    if (limited(`bot:${user.id}`, 120, 3600 * 1000)) throw new HttpError(429, 'Gửi kết quả quá nhanh, hãy thử lại sau.', 'tooFast');
     const body = await readJson(req);
     const level = Number(body.level);
     const plies = Number(body.plies);
-    if (!Number.isInteger(level) || level < 1 || level > 12) throw new HttpError(400, 'Cấp Bot không hợp lệ.');
-    if (!['win', 'draw', 'loss'].includes(body.result)) throw new HttpError(400, 'Kết quả không hợp lệ.');
-    if (!Number.isInteger(plies) || plies < 0 || plies > 1000) throw new HttpError(400, 'Số nước không hợp lệ.');
+    if (!Number.isInteger(level) || level < 1 || level > 12) throw new HttpError(400, 'Cấp Bot không hợp lệ.', 'badLevel');
+    if (!['win', 'draw', 'loss'].includes(body.result)) throw new HttpError(400, 'Kết quả không hợp lệ.', 'badResult');
+    if (!Number.isInteger(plies) || plies < 0 || plies > 1000) throw new HttpError(400, 'Số nước không hợp lệ.', 'badPlies');
     const xp = store.addXp(user, botXp(level, body.result, plies), { source: 'bot', dailyCap: BOT_XP_DAILY_CAP });
     json(res, 200, { xp });
   }
 
   async function puzzleProgress(req, res) {
     const user = userFromRequest(req);
-    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.');
-    if (limited(`puzzle:${user.id}`, 240, 3600 * 1000)) throw new HttpError(429, 'Gửi kết quả quá nhanh, hãy thử lại sau.');
+    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.', 'notLoggedIn');
+    if (limited(`puzzle:${user.id}`, 240, 3600 * 1000)) throw new HttpError(429, 'Gửi kết quả quá nhanh, hãy thử lại sau.', 'tooFast');
     const body = await readJson(req);
     const rating = puzzleRatings.get(String(body.id));
-    if (rating === undefined) throw new HttpError(400, 'Bài giải đố không tồn tại.');
+    if (rating === undefined) throw new HttpError(400, 'Bài giải đố không tồn tại.', 'puzzleNotFound');
     const solved = body.solved === true;
     const puzzle = store.recordPuzzle(user, rating, solved);
     const xp = solved ? store.addXp(user, PUZZLE_XP, { source: 'puzzle', dailyCap: PUZZLE_XP_DAILY_CAP }) : null;
@@ -328,7 +330,7 @@ export function createAuth({ store, env = process.env }) {
 
   async function syncAchievements(req, res) {
     const user = userFromRequest(req);
-    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.');
+    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.', 'notLoggedIn');
     const body = await readJson(req);
     const unlocked = Object.fromEntries(Object.entries(body.unlocked ?? {}).filter(([id]) => ACHIEVEMENT_IDS.has(id)));
     json(res, 200, { achievements: store.mergeAchievements(user, unlocked) });
@@ -336,7 +338,7 @@ export function createAuth({ store, env = process.env }) {
 
   async function renameAccount(req, res) {
     const user = userFromRequest(req);
-    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.');
+    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.', 'notLoggedIn');
     const body = await readJson(req);
     store.rename(user, cleanName(body.name));
     json(res, 200, { user: publicUser(user) });
@@ -344,9 +346,9 @@ export function createAuth({ store, env = process.env }) {
 
   async function deleteAccount(req, res) {
     const user = userFromRequest(req);
-    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.');
+    if (!user) throw new HttpError(401, 'Bạn chưa đăng nhập.', 'notLoggedIn');
     const body = await readJson(req);
-    if (body.confirm !== 'XÓA') throw new HttpError(400, 'Hãy gõ chữ XÓA để xác nhận.');
+    if (body.confirm !== 'XÓA' && body.confirm !== 'DELETE') throw new HttpError(400, 'Hãy gõ chữ XÓA để xác nhận.', 'confirmDelete');
     store.deleteUser(user);
     addCookie(res, cookie(req, SESSION_COOKIE, '', 0));
     json(res, 200, { ok: true });
@@ -354,7 +356,7 @@ export function createAuth({ store, env = process.env }) {
 
   function leaderboard(res, url) {
     const pool = url.searchParams.get('pool');
-    if (!POOLS[pool]) throw new HttpError(400, 'Nhóm xếp hạng không hợp lệ.');
+    if (!POOLS[pool]) throw new HttpError(400, 'Nhóm xếp hạng không hợp lệ.', 'badPool');
     json(res, 200, { pool, players: store.leaderboard(pool) });
   }
 
@@ -462,12 +464,12 @@ export function createAuth({ store, env = process.env }) {
         case 'POST /api/achievements': return await syncAchievements(req, res);
         case 'POST /api/account/name': return await renameAccount(req, res);
         case 'POST /api/account/delete': return await deleteAccount(req, res);
-        default: return json(res, 404, { error: 'Không tìm thấy.' });
+        default: return json(res, 404, { error: 'Không tìm thấy.', code: 'notFound' });
       }
     } catch (error) {
-      if (error instanceof HttpError) return json(res, error.status, { error: error.message });
+      if (error instanceof HttpError) return json(res, error.status, { error: error.message, code: error.code });
       console.error('Lỗi xử lý /api:', error);
-      return json(res, 500, { error: 'Lỗi máy chủ.' });
+      return json(res, 500, { error: 'Lỗi máy chủ.', code: 'serverError' });
     }
   }
 

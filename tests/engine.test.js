@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fromFen, toFen, toUci, perft, Game, sqIndex, START_FEN } from '../public/js/engine.js';
+import { fromFen, toFen, toUci, perft, Game, sqIndex, START_FEN, attackers } from '../public/js/engine.js';
 
 // Số thế cờ chuẩn (perft) của các vị trí kiểm thử phổ biến trên chessprogramming wiki.
 test('perft vị trí xuất phát', () => {
@@ -122,4 +122,15 @@ test('FEN: đọc rồi ghi ra giữ nguyên', () => {
   assert.equal(toUci(g.play(sqIndex('e2'), sqIndex('e4'))), 'e2e4');
   const promo = new Game('7k/4P3/8/8/8/8/8/4K3 w - - 0 1');
   assert.equal(toUci(promo.play(sqIndex('e7'), sqIndex('e8'), 'N')), 'e7e8n');
+});
+
+test('tìm quân đang chiếu (kể cả chiếu đôi)', () => {
+  const single = fromFen('4k3/8/8/8/8/8/8/4R1K1 b - - 0 1');
+  assert.deepEqual(attackers(single.board, sqIndex('e8'), 'w'), [sqIndex('e1')]);
+  const double = fromFen('4k3/8/3N4/8/8/8/8/4R1K1 b - - 0 1');
+  assert.deepEqual(attackers(double.board, sqIndex('e8'), 'w').sort(), [sqIndex('d6'), sqIndex('e1')].sort());
+  const blocked = fromFen('4k3/4p3/8/8/8/8/8/4R1K1 b - - 0 1');
+  assert.deepEqual(attackers(blocked.board, sqIndex('e8'), 'w'), []);
+  const pawn = fromFen('4k3/3P4/8/8/8/8/8/6K1 b - - 0 1');
+  assert.deepEqual(attackers(pawn.board, sqIndex('e8'), 'w'), [sqIndex('d7')]);
 });
